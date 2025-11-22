@@ -30,7 +30,7 @@ export interface IOrderAddress {
 
 export interface IOrder extends Document {
   user: Types.ObjectId;
-  clientOrderId?: string; // temporary id from client, used in /order/:id route
+  clientOrderId?: string;
   items: IOrderItem[];
   status: OrderStatus;
   paymentStatus: PaymentStatus;

@@ -10,12 +10,12 @@ export interface CreateOrderItemInput {
 }
 
 export interface CreateOrderInput {
-  user: string; // user id
+  user: string;
   items: CreateOrderItemInput[];
   totalAmount: number;
   currency?: string;
   shippingAddress: OrderAddress;
-  clientOrderId?: string; // temporary id from client
+  clientOrderId?: string;
 }
 
 export async function createOrder(input: CreateOrderInput) {
@@ -30,5 +30,10 @@ export async function getOrderById(id: string) {
 
 export async function getOrderByClientOrderId(clientOrderId: string) {
   const res = await apiClient.get<Order>(`/orders/client/${clientOrderId}`);
+  return res.data;
+}
+
+export async function getOrdersForUser(userId: string) {
+  const res = await apiClient.get<Order[]>(`/orders/user/${userId}`);
   return res.data;
 }

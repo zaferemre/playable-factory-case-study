@@ -21,4 +21,11 @@ export const orderRepository = {
       .populate("items.product", "name slug")
       .exec();
   },
+
+  async findOrdersByUserId(userId: string): Promise<IOrder[]> {
+    return OrderModel.find({ user: userId })
+      .sort({ createdAt: -1 })
+      .populate("items.product", "name slug")
+      .exec();
+  },
 };

@@ -13,4 +13,8 @@ export const orderService = {
   async getOrderByClientOrderId(clientOrderId: string): Promise<IOrder | null> {
     return orderRepository.findOrderByClientOrderId(clientOrderId);
   },
+
+  async getOrdersForUser(userId: string): Promise<IOrder[]> {
+    return orderRepository.findOrdersByUserId(userId);
+  },
 };

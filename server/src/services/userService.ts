@@ -1,5 +1,6 @@
 import { IUser } from "../models/User";
 import { userRepository } from "../dataAccess/userRepository";
+import type { IUserAddress } from "../models/User";
 
 export const userService = {
   async createUser(data: Partial<IUser>): Promise<IUser> {
@@ -16,5 +17,19 @@ export const userService = {
 
   async getUserByUid(uid: string): Promise<IUser | null> {
     return userRepository.findUserByUid(uid);
+  },
+
+  async addUserAddress(
+    userId: string,
+    address: IUserAddress
+  ): Promise<IUser | null> {
+    return userRepository.addAddressToUser(userId, address);
+  },
+
+  async removeUserAddress(
+    userId: string,
+    index: number
+  ): Promise<IUser | null> {
+    return userRepository.removeAddressFromUser(userId, index);
   },
 };

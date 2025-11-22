@@ -39,3 +39,14 @@ export const getOrderByClientOrderId = async (req: Request, res: Response) => {
     res.status(500).json({ message: "Failed to fetch order" });
   }
 };
+
+export const getOrdersForUser = async (req: Request, res: Response) => {
+  try {
+    const userId = req.params.userId;
+    const orders = await orderService.getOrdersForUser(userId);
+    res.json(orders);
+  } catch (err) {
+    console.error("getOrdersForUser error", err);
+    res.status(500).json({ message: "Failed to fetch orders" });
+  }
+};
