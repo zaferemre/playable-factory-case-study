@@ -23,3 +23,23 @@ export const getProductById = async (req: Request, res: Response) => {
     res.status(500).json({ message: "Failed to fetch product" });
   }
 };
+
+export const listAllProducts = async (_req: Request, res: Response) => {
+  try {
+    const products = await productService.getAllProducts();
+    res.json(products);
+  } catch (err) {
+    console.error("listAllProducts error", err);
+    res.status(500).json({ message: "Failed to fetch products" });
+  }
+};
+
+export const listAvailableProducts = async (_req: Request, res: Response) => {
+  try {
+    const products = await productService.getAvailableProducts();
+    res.json(products);
+  } catch (err) {
+    console.error("listAvailableProducts error", err);
+    res.status(500).json({ message: "Failed to fetch products" });
+  }
+};

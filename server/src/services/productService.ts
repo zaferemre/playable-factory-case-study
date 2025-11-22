@@ -13,4 +13,11 @@ export const productService = {
   async getProductBySlug(slug: string): Promise<IProduct | null> {
     return productRepository.findProductBySlug(slug);
   },
+
+  async getAllProducts(): Promise<IProduct[]> {
+    return productRepository.listAllProducts();
+  },
+  async getAvailableProducts(): Promise<IProduct[]> {
+    return productRepository.listAvailableProducts();
+  },
 };

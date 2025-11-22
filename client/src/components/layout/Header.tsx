@@ -1,10 +1,48 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
+import { useAppDispatch, useAppSelector } from "@/lib/store/hooks";
+import {
+  openCart,
+  selectCartCount,
+  selectCartLoadedFromServer,
+  setCartFromServer,
+} from "@/lib/store/cartSlice";
+import {
+  getCartBySessionId,
+  getOrCreateCartSessionId,
+} from "@/lib/api/cartApi";
 
 export default function Header() {
   const { user, loading, loginWithGoogle, logout } = useAuth();
+  const dispatch = useAppDispatch();
+  const cartCount = useAppSelector(selectCartCount);
+  const loadedFromServer = useAppSelector(selectCartLoadedFromServer);
+
+  // hydrate cart from backend on first load using session based cart
+  useEffect(() => {
+    if (loadedFromServer) return;
+
+    const hydrate = async () => {
+      try {
+        const sessionId = getOrCreateCartSessionId();
+        const cart = await getCartBySessionId(sessionId);
+        dispatch(setCartFromServer(cart));
+      } catch (err: any) {
+        // 404 or error just means empty cart
+        console.warn("No server cart found, using empty cart");
+        dispatch(setCartFromServer(null));
+      }
+    };
+
+    hydrate();
+  }, [loadedFromServer, dispatch]);
+
+  const handleCartClick = () => {
+    dispatch(openCart());
+  };
 
   return (
     <header className="border-b bg-white">
@@ -17,9 +55,24 @@ export default function Header() {
           <Link href="/shop" className="hover:underline">
             Shop
           </Link>
-          <Link href="/cart" className="hover:underline">
-            Cart
-          </Link>
+
+          {/* Cart button with badge */}
+          <button
+            type="button"
+            onClick={handleCartClick}
+            className="relative flex items-center gap-1 text-sm hover:underline"
+          >
+            <span>Cart</span>
+            <span role="img" aria-label="cart">
+              🛒
+            </span>
+            {cartCount > 0 && (
+              <span className="absolute -top-2 -right-2 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-[4px] text-[10px] font-semibold text-white">
+                {cartCount}
+              </span>
+            )}
+          </button>
+
           <Link href="/profile" className="hover:underline">
             Profile
           </Link>

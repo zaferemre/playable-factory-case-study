@@ -13,4 +13,18 @@ export const productRepository = {
   async findProductBySlug(slug: string): Promise<IProduct | null> {
     return ProductModel.findOne({ slug }).populate("category").exec();
   },
+
+  async listAllProducts(): Promise<IProduct[]> {
+    return ProductModel.find()
+      .populate("category")
+      .sort({ createdAt: -1 })
+      .exec();
+  },
+
+  async listAvailableProducts(): Promise<IProduct[]> {
+    return ProductModel.find({ isActive: true, stockQuantity: { $gt: 0 } })
+      .populate("category")
+      .sort({ createdAt: -1 })
+      .exec();
+  },
 };
