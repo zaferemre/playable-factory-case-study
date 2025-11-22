@@ -1,154 +1,29 @@
-import { Types } from "mongoose";
 import { CartModel, type ICart } from "../models/Cart";
-
-type CartSelector = {
-  userId?: string;
-  sessionId?: string;
-};
-
-type AddItemParams = CartSelector & {
-  productId: string;
-  quantity: number;
-};
-
-type UpdateItemParams = CartSelector & {
-  productId: string;
-};
-
-type UpdateQuantityParams = CartSelector & {
-  productId: string;
-  quantity: number;
-};
+import type { Types } from "mongoose";
 
 export const cartRepository = {
-  async findCart(selector: CartSelector): Promise<ICart | null> {
-    const { userId, sessionId } = selector;
-
-    if (!userId && !sessionId) {
-      throw new Error("findCart requires userId or sessionId");
-    }
-
-    const query: Record<string, unknown> = {};
-    if (userId) query.user = userId;
-    if (sessionId) query.sessionId = sessionId;
-
-    return CartModel.findOne(query).populate("items.product").exec();
+  async getCartByUserId(userId: string): Promise<ICart | null> {
+    return CartModel.findOne({ user: userId }).exec();
   },
 
-  async addItemToCart(params: AddItemParams): Promise<ICart> {
-    const { userId, sessionId, productId, quantity } = params;
-
-    if (!userId && !sessionId) {
-      throw new Error("addItemToCart requires userId or sessionId");
-    }
-
-    const query: Record<string, unknown> = {};
-    if (userId) query.user = userId;
-    if (sessionId) query.sessionId = sessionId;
-
-    let cart = await CartModel.findOne(query);
-
-    if (!cart) {
-      cart = new CartModel({
-        user: userId,
-        sessionId,
-        items: [
-          {
-            product: new Types.ObjectId(productId),
-            quantity,
-          },
-        ],
-      });
-    } else {
-      const existingItem = cart.items.find(
-        (item) => item.product.toString() === productId
-      );
-
-      if (existingItem) {
-        existingItem.quantity += quantity;
-      } else {
-        cart.items.push({
-          product: new Types.ObjectId(productId),
-          quantity,
-        });
-      }
-    }
-
-    await cart.save();
-    await cart.populate("items.product");
-    return cart;
+  async getCartBySessionId(sessionId: string): Promise<ICart | null> {
+    return CartModel.findOne({ sessionId }).exec();
   },
 
-  async removeItemFromCart(params: UpdateItemParams): Promise<ICart | null> {
-    const { userId, sessionId, productId } = params;
-
-    if (!userId && !sessionId) {
-      throw new Error("removeItemFromCart requires userId or sessionId");
-    }
-
-    const query: Record<string, unknown> = {};
-    if (userId) query.user = userId;
-    if (sessionId) query.sessionId = sessionId;
-
-    const cart = await CartModel.findOne(query);
-
-    if (!cart) return null;
-
-    cart.items = cart.items.filter(
-      (item) => item.product.toString() !== productId
-    );
-
-    await cart.save();
-    await cart.populate("items.product");
-    return cart;
+  async createCart(data: Partial<ICart>): Promise<ICart> {
+    const doc = new CartModel(data);
+    return doc.save();
   },
 
-  async updateItemQuantity(
-    params: UpdateQuantityParams
-  ): Promise<ICart | null> {
-    const { userId, sessionId, productId, quantity } = params;
-
-    if (!userId && !sessionId) {
-      throw new Error("updateItemQuantity requires userId or sessionId");
-    }
-
-    const query: Record<string, unknown> = {};
-    if (userId) query.user = userId;
-    if (sessionId) query.sessionId = sessionId;
-
-    const cart = await CartModel.findOne(query);
-
-    if (!cart) return null;
-
-    const item = cart.items.find((i) => i.product.toString() === productId);
-
-    if (!item) return null;
-
-    item.quantity = quantity;
-
-    await cart.save();
-    await cart.populate("items.product");
-    return cart;
+  async saveCart(cart: ICart): Promise<ICart> {
+    return cart.save();
   },
 
-  async clearCart(selector: CartSelector): Promise<ICart | null> {
-    const { userId, sessionId } = selector;
+  async clearCartByUserId(userId: string): Promise<void> {
+    await CartModel.deleteOne({ user: userId }).exec();
+  },
 
-    if (!userId && !sessionId) {
-      throw new Error("clearCart requires userId or sessionId");
-    }
-
-    const query: Record<string, unknown> = {};
-    if (userId) query.user = userId;
-    if (sessionId) query.sessionId = sessionId;
-
-    const cart = await CartModel.findOne(query);
-
-    if (!cart) return null;
-
-    cart.items = [];
-    await cart.save();
-    await cart.populate("items.product");
-    return cart;
+  async clearCartBySessionId(sessionId: string): Promise<void> {
+    await CartModel.deleteOne({ sessionId }).exec();
   },
 };

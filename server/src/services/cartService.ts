@@ -1,63 +1,133 @@
 import { cartRepository } from "../dataAccess/cartRepository";
-import type { ICart } from "../models/Cart";
+import { CartModel, type ICart } from "../models/Cart";
+import type { Types } from "mongoose";
 
-type CartSelector = {
-  userId?: string;
-  sessionId?: string;
+interface GetCartOpts {
+  userId?: string | null;
+  sessionId?: string | null;
+}
+
+interface ItemChangeOpts extends GetCartOpts {
+  productId: string;
+  quantity?: number;
+}
+
+const getOrCreateCart = async ({
+  userId,
+  sessionId,
+}: GetCartOpts): Promise<ICart> => {
+  if (userId) {
+    let cart = await cartRepository.getCartByUserId(userId);
+    if (!cart) {
+      cart = await cartRepository.createCart({
+        user: userId as unknown as Types.ObjectId,
+        items: [],
+      });
+    }
+    return cart;
+  }
+
+  if (!sessionId) {
+    throw new Error("sessionId required for guest cart");
+  }
+
+  let cart = await cartRepository.getCartBySessionId(sessionId);
+  if (!cart) {
+    cart = await cartRepository.createCart({
+      sessionId,
+      items: [],
+    });
+  }
+  return cart;
 };
 
 export const cartService = {
-  async getCart(selector: CartSelector): Promise<ICart | null> {
-    return cartRepository.findCart(selector);
-  },
-
-  async addItem(params: {
-    userId?: string;
-    sessionId?: string;
-    productId: string;
-    quantity?: number;
-  }): Promise<ICart> {
-    const { userId, sessionId, productId, quantity } = params;
-
-    return cartRepository.addItemToCart({
-      userId,
-      sessionId,
-      productId,
-      quantity: quantity ?? 1,
+  async getCartByUserId(userId: string) {
+    const cart = await cartRepository.getCartByUserId(userId);
+    if (cart) return cart;
+    // always return a cart structure, even if empty
+    return cartRepository.createCart({
+      user: userId as unknown as Types.ObjectId,
+      items: [],
     });
   },
 
-  async removeItem(params: {
-    userId?: string;
-    sessionId?: string;
-    productId: string;
-  }): Promise<ICart | null> {
-    const { userId, sessionId, productId } = params;
-
-    return cartRepository.removeItemFromCart({
-      userId,
+  async getCartBySessionId(sessionId: string) {
+    const cart = await cartRepository.getCartBySessionId(sessionId);
+    if (cart) return cart;
+    return cartRepository.createCart({
       sessionId,
-      productId,
+      items: [],
     });
   },
 
-  async updateQuantity(params: {
-    userId?: string;
-    sessionId?: string;
-    productId: string;
-    quantity: number;
-  }): Promise<ICart | null> {
-    const { userId, sessionId, productId, quantity } = params;
+  async addItem(opts: ItemChangeOpts) {
+    const { userId, sessionId, productId, quantity = 1 } = opts;
 
-    return cartRepository.updateItemQuantity({
-      userId,
-      sessionId,
-      productId,
-      quantity,
-    });
+    const cart = await getOrCreateCart({ userId, sessionId });
+
+    const existing = cart.items.find(
+      (it) => it.product.toString() === productId
+    );
+
+    if (existing) {
+      existing.quantity += quantity;
+    } else {
+      cart.items.push({
+        product: productId as unknown as Types.ObjectId,
+        quantity,
+      });
+    }
+
+    return cartRepository.saveCart(cart);
   },
 
-  async clearCart(selector: CartSelector): Promise<ICart | null> {
-    return cartRepository.clearCart(selector);
+  async removeItem(opts: ItemChangeOpts) {
+    const { userId, sessionId, productId } = opts;
+
+    const cart = await getOrCreateCart({ userId, sessionId });
+
+    cart.items = cart.items.filter((it) => it.product.toString() !== productId);
+
+    return cartRepository.saveCart(cart);
+  },
+
+  async updateItemQuantity(opts: ItemChangeOpts) {
+    const { userId, sessionId, productId, quantity = 1 } = opts;
+
+    const cart = await getOrCreateCart({ userId, sessionId });
+
+    const item = cart.items.find((it) => it.product.toString() === productId);
+    if (!item) {
+      // item not in cart, treat as add
+      cart.items.push({
+        product: productId as unknown as Types.ObjectId,
+        quantity,
+      });
+    } else {
+      item.quantity = quantity;
+      if (item.quantity <= 0) {
+        cart.items = cart.items.filter(
+          (it) => it.product.toString() !== productId
+        );
+      }
+    }
+
+    return cartRepository.saveCart(cart);
+  },
+
+  async clearCart(opts: GetCartOpts) {
+    const { userId, sessionId } = opts;
+
+    if (userId) {
+      await cartRepository.clearCartByUserId(userId);
+      return;
+    }
+
+    if (!sessionId) {
+      throw new Error("sessionId required for guest cart");
+    }
+
+    await cartRepository.clearCartBySessionId(sessionId);
   },
 };

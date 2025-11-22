@@ -19,6 +19,7 @@ export interface IOrderItem {
 
 export interface IOrderAddress {
   fullName: string;
+  email?: string; // new
   line1: string;
   line2?: string;
   city: string;
@@ -29,7 +30,8 @@ export interface IOrderAddress {
 }
 
 export interface IOrder extends Document {
-  user: Types.ObjectId;
+  user?: Types.ObjectId; // now optional
+  sessionId?: string; // new
   clientOrderId?: string;
   items: IOrderItem[];
   status: OrderStatus;
@@ -55,6 +57,7 @@ const OrderItemSchema = new Schema<IOrderItem>(
 const OrderAddressSchema = new Schema<IOrderAddress>(
   {
     fullName: { type: String, required: true },
+    email: { type: String }, // optional, but useful for guests
     line1: { type: String, required: true },
     line2: { type: String },
     city: { type: String, required: true },
@@ -68,7 +71,13 @@ const OrderAddressSchema = new Schema<IOrderAddress>(
 
 const OrderSchema = new Schema<IOrder>(
   {
-    user: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    user: { type: Schema.Types.ObjectId, ref: "User", required: false },
+
+    sessionId: {
+      type: String,
+      required: false,
+      index: true,
+    },
 
     clientOrderId: {
       type: String,

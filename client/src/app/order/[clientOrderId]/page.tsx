@@ -9,13 +9,20 @@ import {
   type OrderDraft,
 } from "@/lib/orderDraftClient";
 import { createOrder, type CreateOrderItemInput } from "@/lib/api/orderApi";
-import type { OrderAddress } from "@/lib/types/types";
+import type { OrderAddress, UserAddress } from "@/lib/types/types";
+import { getOrCreateCartSessionId } from "@/lib/api/cartApi";
 
 export default function OrderPage() {
   const params = useParams<{ clientOrderId: string }>();
   const clientOrderId = params.clientOrderId;
   const router = useRouter();
-  const { user } = useAuth();
+
+  const {
+    backendUserId,
+    backendUser,
+    firebaseUser,
+    loading: authLoading,
+  } = useAuth();
 
   const [draft, setDraft] = useState<OrderDraft | null>(null);
   const [loading, setLoading] = useState(true);
@@ -25,6 +32,7 @@ export default function OrderPage() {
 
   const [address, setAddress] = useState<OrderAddress>({
     fullName: "",
+    email: "",
     line1: "",
     city: "",
     postalCode: "",
@@ -34,6 +42,16 @@ export default function OrderPage() {
     phone: "",
   });
 
+  const [savedAddresses, setSavedAddresses] = useState<UserAddress[]>([]);
+  const [sessionId, setSessionId] = useState<string>("");
+
+  // get or create guest session id on mount
+  useEffect(() => {
+    const id = getOrCreateCartSessionId();
+    setSessionId(id);
+  }, []);
+
+  // load order draft
   useEffect(() => {
     if (!clientOrderId) return;
 
@@ -48,10 +66,63 @@ export default function OrderPage() {
     setLoading(false);
   }, [clientOrderId]);
 
+  // prefill name and email from backendUser if available
+  useEffect(() => {
+    if (!backendUser) return;
+
+    setAddress((prev) => ({
+      ...prev,
+      fullName: prev.fullName || backendUser.name,
+      email: prev.email || backendUser.email,
+    }));
+  }, [backendUser]);
+
+  // hydrate saved addresses and prefill from default address if exists
+  useEffect(() => {
+    if (!backendUser || !backendUserId) return;
+    if (!backendUser.addresses || backendUser.addresses.length === 0) return;
+
+    setSavedAddresses(backendUser.addresses);
+
+    const defaultAddr =
+      backendUser.addresses.find((a) => a.isDefault) ??
+      backendUser.addresses[0];
+
+    if (!defaultAddr) return;
+
+    setAddress((prev) => ({
+      ...prev,
+      fullName: defaultAddr.fullName,
+      line1: defaultAddr.line1,
+      line2: defaultAddr.line2 || "",
+      city: defaultAddr.city,
+      state: defaultAddr.state || "",
+      postalCode: defaultAddr.postalCode,
+      country: defaultAddr.country,
+      phone: defaultAddr.phone || "",
+      // keep email from user if we already set it
+    }));
+  }, [backendUser, backendUserId]);
+
   const handleAddressChange = (field: keyof OrderAddress, value: string) => {
     setAddress((prev) => ({
       ...prev,
       [field]: value,
+    }));
+  };
+
+  const handleUseSavedAddress = (addr: UserAddress) => {
+    setAddress((prev) => ({
+      ...prev,
+      fullName: addr.fullName,
+      line1: addr.line1,
+      line2: addr.line2 || "",
+      city: addr.city,
+      state: addr.state || "",
+      postalCode: addr.postalCode,
+      country: addr.country,
+      phone: addr.phone || "",
+      // leave email as is, from user or manual input
     }));
   };
 
@@ -60,18 +131,6 @@ export default function OrderPage() {
 
     setError("");
     setSuccessMessage("");
-
-    if (!user) {
-      setError("You need to be logged in to place an order.");
-      return;
-    }
-
-    const backendUserId = (() => {
-      const bytes = crypto.getRandomValues(new Uint8Array(12));
-      return Array.from(bytes)
-        .map((b) => b.toString(16).padStart(2, "0"))
-        .join("");
-    })();
 
     if (
       !address.fullName ||
@@ -92,30 +151,32 @@ export default function OrderPage() {
       lineTotal: it.unitPrice * it.quantity,
     }));
 
+    const base: { user?: string; sessionId?: string } = backendUserId
+      ? { user: backendUserId }
+      : { sessionId };
+
+    // if user is logged in but address email is empty, default it
+    const shippingAddress: OrderAddress = {
+      ...address,
+      email:
+        address.email || backendUser?.email || firebaseUser?.email || undefined,
+    };
+
     setPlacing(true);
     try {
       const order = await createOrder({
-        user: backendUserId,
+        ...base,
         items,
         totalAmount: draft.totalAmount,
         currency: draft.currency,
-        shippingAddress: {
-          fullName: address.fullName,
-          line1: address.line1,
-          line2: address.line2,
-          city: address.city,
-          state: address.state,
-          postalCode: address.postalCode,
-          country: address.country,
-          phone: address.phone,
-        },
+        shippingAddress,
         clientOrderId,
       });
 
       deleteOrderDraft(clientOrderId);
       setSuccessMessage("Order created successfully.");
-      // you can redirect to a confirmation page if you like
       console.log("Created order", order);
+      // router.push(`/orders/${order._id}`);
     } catch (err: any) {
       console.error("createOrder error", err);
       setError(err?.message || "Failed to place order.");
@@ -124,7 +185,7 @@ export default function OrderPage() {
     }
   };
 
-  if (loading) {
+  if (loading || authLoading) {
     return (
       <section className="p-6">
         <p className="text-sm text-slate-600">Loading order...</p>
@@ -150,6 +211,8 @@ export default function OrderPage() {
     );
   }
 
+  // No login gate here any more, guests can continue
+
   return (
     <section className="flex flex-col gap-6 p-6 max-w-4xl mx-auto">
       <div>
@@ -157,6 +220,15 @@ export default function OrderPage() {
         <p className="text-sm text-slate-600">
           Review your order and provide a shipping address.
         </p>
+        {backendUserId ? (
+          <p className="mt-1 text-[11px] text-slate-500">
+            Logged in as {backendUser?.email || firebaseUser?.email}
+          </p>
+        ) : (
+          <p className="mt-1 text-[11px] text-slate-500">
+            You are checking out as a guest.
+          </p>
+        )}
       </div>
 
       {error && <p className="text-sm text-red-600">{error}</p>}
@@ -201,6 +273,45 @@ export default function OrderPage() {
         <div className="space-y-3 rounded-lg border bg-white p-4 shadow-sm">
           <h2 className="text-sm font-semibold">Shipping address</h2>
 
+          {/* saved addresses for logged in users only */}
+          {backendUserId && savedAddresses.length > 0 && (
+            <div className="mb-3 rounded border bg-slate-50 p-2 max-h-40 overflow-y-auto">
+              <p className="text-[11px] font-semibold text-slate-700 mb-1">
+                Saved addresses
+              </p>
+              <div className="space-y-2">
+                {savedAddresses.map((addr, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => handleUseSavedAddress(addr)}
+                    className="w-full text-left rounded border bg-white px-2 py-2 text-[11px] hover:border-slate-400"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold">
+                        {addr.label || "Address"}
+                      </span>
+                      {addr.isDefault && (
+                        <span className="ml-2 rounded bg-green-100 px-2 py-[1px] text-[10px] font-semibold text-green-700">
+                          Default
+                        </span>
+                      )}
+                    </div>
+                    <p>{addr.fullName}</p>
+                    <p>{addr.line1}</p>
+                    {addr.line2 && <p>{addr.line2}</p>}
+                    <p>
+                      {addr.postalCode} {addr.city}
+                      {addr.state ? `, ${addr.state}` : ""}
+                    </p>
+                    <p>{addr.country}</p>
+                    {addr.phone && <p>Phone {addr.phone}</p>}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="space-y-2 text-xs">
             <div>
               <label className="mb-1 block text-slate-600">Full name</label>
@@ -209,6 +320,15 @@ export default function OrderPage() {
                 onChange={(e) =>
                   handleAddressChange("fullName", e.target.value)
                 }
+                className="w-full rounded border px-2 py-1 text-xs"
+              />
+            </div>
+
+            <div>
+              <label className="mb-1 block text-slate-600">Email</label>
+              <input
+                value={address.email || ""}
+                onChange={(e) => handleAddressChange("email", e.target.value)}
                 className="w-full rounded border px-2 py-1 text-xs"
               />
             </div>

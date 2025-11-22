@@ -96,6 +96,7 @@ export interface OrderItem {
 
 export interface OrderAddress {
   fullName: string;
+  email?: string; // added, useful for guests and contact
   line1: string;
   line2?: string;
   city: string;
@@ -107,7 +108,8 @@ export interface OrderAddress {
 
 export interface Order {
   _id: string;
-  user: User | string;
+  user?: User | string; // now optional for guest orders
+  sessionId?: string; // added, to link guest orders to a session
   clientOrderId?: string; // temporary id stored on the order
   items: OrderItem[];
   status: OrderStatus;

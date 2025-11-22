@@ -11,34 +11,47 @@ import {
   setCartFromServer,
 } from "@/lib/store/cartSlice";
 import {
-  getCartBySessionId,
+  getCartForCurrentUser,
   getOrCreateCartSessionId,
 } from "@/lib/api/cartApi";
 
 export default function Header() {
-  const { user, loading, loginWithGoogle, logout } = useAuth();
+  const { firebaseUser, backendUserId, loading, loginWithGoogle, logout } =
+    useAuth();
+
   const dispatch = useAppDispatch();
   const cartCount = useAppSelector(selectCartCount);
   const loadedFromServer = useAppSelector(selectCartLoadedFromServer);
 
-  // hydrate cart from backend on first load using session based cart
   useEffect(() => {
-    if (loadedFromServer) return;
+    if (!backendUserId && !loadedFromServer) {
+      const hydrateGuest = async () => {
+        try {
+          const sessionId = getOrCreateCartSessionId();
+          const cart = await getCartForCurrentUser({ sessionId });
+          dispatch(setCartFromServer(cart));
+        } catch {
+          dispatch(setCartFromServer(null));
+        }
+      };
+      hydrateGuest();
+    }
+  }, [backendUserId, loadedFromServer, dispatch]);
 
-    const hydrate = async () => {
+  useEffect(() => {
+    if (!backendUserId) return;
+
+    const hydrateUser = async () => {
       try {
-        const sessionId = getOrCreateCartSessionId();
-        const cart = await getCartBySessionId(sessionId);
+        const cart = await getCartForCurrentUser({ userId: backendUserId });
         dispatch(setCartFromServer(cart));
-      } catch (err: any) {
-        // 404 or error just means empty cart
-        console.warn("No server cart found, using empty cart");
+      } catch {
         dispatch(setCartFromServer(null));
       }
     };
 
-    hydrate();
-  }, [loadedFromServer, dispatch]);
+    hydrateUser();
+  }, [backendUserId, dispatch]);
 
   const handleCartClick = () => {
     dispatch(openCart());
@@ -56,7 +69,6 @@ export default function Header() {
             Shop
           </Link>
 
-          {/* Cart button with badge */}
           <button
             type="button"
             onClick={handleCartClick}
@@ -66,6 +78,7 @@ export default function Header() {
             <span role="img" aria-label="cart">
               🛒
             </span>
+
             {cartCount > 0 && (
               <span className="absolute -top-2 -right-2 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-[4px] text-[10px] font-semibold text-white">
                 {cartCount}
@@ -73,19 +86,23 @@ export default function Header() {
             )}
           </button>
 
-          <Link href="/profile" className="hover:underline">
-            Profile
-          </Link>
+          {/* Only show Profile if logged in */}
+          {firebaseUser && (
+            <Link href="/profile" className="hover:underline">
+              Profile
+            </Link>
+          )}
+
           <Link href="/admin" className="hover:underline">
             Admin
           </Link>
 
           {loading ? (
             <span className="text-xs text-slate-500">Checking login...</span>
-          ) : user ? (
+          ) : firebaseUser ? (
             <div className="flex items-center gap-2">
               <span className="max-w-[140px] truncate text-xs text-slate-700">
-                {user.email}
+                {firebaseUser.email}
               </span>
               <button
                 onClick={logout}

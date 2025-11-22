@@ -4,6 +4,7 @@ import type { Product } from "@/lib/types/types";
 import { useAppDispatch } from "@/lib/store/hooks";
 import { addItemLocal } from "@/lib/store/cartSlice";
 import { addItemToCart, getOrCreateCartSessionId } from "@/lib/api/cartApi";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface ProductCardProps {
   product: Product;
@@ -11,20 +12,18 @@ interface ProductCardProps {
 
 export default function ProductCard({ product }: ProductCardProps) {
   const dispatch = useAppDispatch();
+  const { backendUserId } = useAuth();
 
   const handleAddToCart = async () => {
-    // update client instantly
     dispatch(addItemLocal(product));
 
-    // persist to backend as guest cart for now
     const sessionId = getOrCreateCartSessionId();
     void addItemToCart({
+      userId: backendUserId,
       sessionId,
       productId: product._id,
       quantity: 1,
-    }).catch((err) => {
-      console.error("Failed to sync cart to server", err);
-    });
+    }).catch((err) => console.error("Failed to sync cart", err));
   };
 
   return (

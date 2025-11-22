@@ -10,7 +10,8 @@ export interface CreateOrderItemInput {
 }
 
 export interface CreateOrderInput {
-  user: string;
+  user?: string; // optional, for logged in orders
+  sessionId?: string; // optional, for guest orders
   items: CreateOrderItemInput[];
   totalAmount: number;
   currency?: string;

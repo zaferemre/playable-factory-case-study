@@ -16,7 +16,7 @@ export interface IUserAddress {
 }
 
 export interface IUser extends Document {
-  uid?: string; // Firebase UID (optional for now)
+  uid?: string;
   email: string;
   name: string;
   photoUrl?: string;

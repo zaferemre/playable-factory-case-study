@@ -1,84 +1,117 @@
-// lib/orderDraftClient.ts
+// src/lib/orderDraftClient.ts
 
-import type { CartItem } from "@/lib/types/types";
+import type { Product } from "./types/types";
 
+// what a single line in the draft looks like
 export interface OrderDraftItem {
   productId: string;
   name: string;
   quantity: number;
   unitPrice: number;
   currency: string;
-  imageUrl?: string;
 }
 
+// full draft stored in localStorage
 export interface OrderDraft {
-  clientOrderId: string;
+  id: string; // client side draft id
   items: OrderDraftItem[];
   totalAmount: number;
   currency: string;
   createdAt: string;
 }
 
-const STORAGE_PREFIX = "playable_order_draft_";
+function getStorageKey(id: string) {
+  return `orderDraft:${id}`;
+}
 
+function generateId(): string {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return crypto.randomUUID();
+  }
+  return Math.random().toString(36).slice(2);
+}
+
+// Accepts whatever shape cartItems has and normalizes it to an array
 export function createOrderDraftFromCart(
-  clientOrderId: string,
-  cartItems: CartItem[]
-): OrderDraft {
-  const items: OrderDraftItem[] = cartItems
-    .map((item) => {
-      if (typeof item.product === "string") {
-        // you can fetch products by id if you need, for now skip such entries
+  cartItems: unknown,
+  totalAmount: number,
+  currency: string
+): string {
+  if (typeof window === "undefined") {
+    // should not happen in normal Next client usage
+    return "";
+  }
+
+  const list: any[] = Array.isArray(cartItems)
+    ? cartItems
+    : cartItems && typeof cartItems === "object"
+    ? Object.values(cartItems as Record<string, unknown>)
+    : [];
+
+  const items: OrderDraftItem[] = list
+    .map((item: any): OrderDraftItem | null => {
+      const rawProduct = item?.product as Product | string | undefined;
+      const quantity = Number(item?.quantity ?? 0);
+
+      if (!rawProduct || quantity <= 0) {
         return null;
       }
 
+      if (typeof rawProduct === "string") {
+        // minimal fallback if we only have product id
+        return {
+          productId: rawProduct,
+          name: "Product",
+          quantity,
+          unitPrice: 0,
+          currency,
+        };
+      }
+
       return {
-        productId: item.product._id,
-        name: item.product.name,
-        quantity: item.quantity,
-        unitPrice: item.product.price,
-        currency: item.product.currency,
-        imageUrl: item.product.imageUrls?.[0],
+        productId: rawProduct._id,
+        name: rawProduct.name,
+        quantity,
+        unitPrice: rawProduct.price,
+        currency: rawProduct.currency || currency,
       };
     })
-    .filter((x): x is OrderDraftItem => x !== null);
+    .filter((it): it is OrderDraftItem => it !== null);
 
-  const totalAmount = items.reduce(
-    (sum, it) => sum + it.unitPrice * it.quantity,
-    0
-  );
+  const id = generateId();
 
-  const currency = items[0]?.currency || "TRY";
-
-  return {
-    clientOrderId,
+  const draft: OrderDraft = {
+    id,
     items,
     totalAmount,
     currency,
     createdAt: new Date().toISOString(),
   };
+
+  window.localStorage.setItem(getStorageKey(id), JSON.stringify(draft));
+
+  return id;
 }
 
-export function saveOrderDraft(draft: OrderDraft) {
-  if (typeof window === "undefined") return;
-  const key = STORAGE_PREFIX + draft.clientOrderId;
-  window.localStorage.setItem(key, JSON.stringify(draft));
-}
-
-export function loadOrderDraft(clientOrderId: string): OrderDraft | null {
+export function loadOrderDraft(id: string): OrderDraft | null {
   if (typeof window === "undefined") return null;
-  const key = STORAGE_PREFIX + clientOrderId;
-  const raw = window.localStorage.getItem(key);
-  if (!raw) return null;
   try {
-    return JSON.parse(raw) as OrderDraft;
-  } catch {
+    const raw = window.localStorage.getItem(getStorageKey(id));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as OrderDraft;
+    if (!parsed || !Array.isArray(parsed.items)) return null;
+    return parsed;
+  } catch (err) {
+    console.error("loadOrderDraft error", err);
     return null;
   }
 }
 
-export function deleteOrderDraft(clientOrderId: string) {
+export function deleteOrderDraft(id: string): void {
   if (typeof window === "undefined") return;
-  const key = STORAGE_PREFIX + clientOrderId;
-  window.localStorage.removeItem(key);
+  try {
+    window.localStorage.removeItem(getStorageKey(id));
+  } catch (err) {
+    console.error("deleteOrderDraft error", err);
+  }
 }

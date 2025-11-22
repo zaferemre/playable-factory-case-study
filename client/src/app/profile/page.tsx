@@ -26,21 +26,16 @@ function generateId() {
   return Math.random().toString(36).slice(2);
 }
 
-function getStoredBackendUserId() {
-  if (typeof window === "undefined") return null;
-  return window.localStorage.getItem("playable_backend_user_id");
-}
-
-function storeBackendUserId(id: string) {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem("playable_backend_user_id", id);
-}
-
 export default function ProfilePage() {
-  const { user, loading: authLoading, loginWithGoogle } = useAuth();
+  const {
+    firebaseUser,
+    backendUser,
+    backendUserId,
+    loading: authLoading,
+    loginWithGoogle,
+  } = useAuth();
 
-  const [backendUserId, setBackendUserId] = useState<string | null>(null);
-  const [backendUser, setBackendUser] = useState<User | null>(null);
+  const [userProfile, setUserProfile] = useState<User | null>(backendUser);
   const [orders, setOrders] = useState<Order[]>([]);
   const [addressesLoading, setAddressesLoading] = useState(false);
   const [ordersLoading, setOrdersLoading] = useState(false);
@@ -69,25 +64,22 @@ export default function ProfilePage() {
     isDefault: false,
   });
 
-  // load stored backend user id on mount
   useEffect(() => {
-    const stored = getStoredBackendUserId();
-    if (stored) {
-      setBackendUserId(stored);
+    if (backendUser) {
+      setUserProfile(backendUser);
     }
-  }, []);
+  }, [backendUser]);
 
-  // load user profile and orders when backendUserId is available
   useEffect(() => {
     if (!backendUserId) return;
 
-    const loadUserAndOrders = async () => {
+    const loadProfileAndOrders = async () => {
       setError("");
 
       try {
         setAddressesLoading(true);
         const u = await getUserById(backendUserId);
-        setBackendUser(u);
+        setUserProfile(u);
       } catch (err: any) {
         console.error("getUserById error", err);
         setError(err?.message || "Failed to load user profile");
@@ -97,8 +89,8 @@ export default function ProfilePage() {
 
       try {
         setOrdersLoading(true);
-        const userOrders = await getOrdersForUser(backendUserId);
-        setOrders(userOrders);
+        const list = await getOrdersForUser(backendUserId);
+        setOrders(list);
       } catch (err: any) {
         console.error("getOrdersForUser error", err);
         setError((prev) => prev || "Failed to load order history");
@@ -107,7 +99,7 @@ export default function ProfilePage() {
       }
     };
 
-    loadUserAndOrders();
+    loadProfileAndOrders();
   }, [backendUserId]);
 
   const handleAddressFieldChange = (
@@ -122,7 +114,7 @@ export default function ProfilePage() {
 
   const handleAddAddress = async () => {
     if (!backendUserId) {
-      setError("Backend user id not set");
+      setError("You need to be logged in to add an address.");
       return;
     }
 
@@ -133,7 +125,7 @@ export default function ProfilePage() {
       !newAddress.postalCode ||
       !newAddress.country
     ) {
-      setError("Please fill out required address fields");
+      setError("Please fill out required address fields.");
       return;
     }
 
@@ -141,7 +133,7 @@ export default function ProfilePage() {
     try {
       setAddressesLoading(true);
       const updated = await addUserAddress(backendUserId, newAddress);
-      setBackendUser(updated);
+      setUserProfile(updated);
       setNewAddress({
         fullName: "",
         line1: "",
@@ -169,7 +161,7 @@ export default function ProfilePage() {
     try {
       setAddressesLoading(true);
       const updated = await deleteUserAddress(backendUserId, index);
-      setBackendUser(updated);
+      setUserProfile(updated);
     } catch (err: any) {
       console.error("deleteUserAddress error", err);
       setError(err?.message || "Failed to delete address");
@@ -180,19 +172,20 @@ export default function ProfilePage() {
 
   const handleAddPayment = () => {
     if (!newPayment.brand || !newPayment.last4 || !newPayment.expiry) {
-      setError("Please fill payment brand, last 4 digits and expiry");
+      setError("Please fill payment brand, last 4 digits and expiry.");
       return;
     }
 
     setError("");
     const id = generateId();
+
     setPaymentMethods((prev) => {
-      const updated = newPayment.isDefault
+      const base = newPayment.isDefault
         ? prev.map((m) => ({ ...m, isDefault: false }))
         : prev;
 
       return [
-        ...updated,
+        ...base,
         {
           ...newPayment,
           id,
@@ -223,13 +216,6 @@ export default function ProfilePage() {
     );
   };
 
-  const handleBackendUserIdChange = (value: string) => {
-    setBackendUserId(value || null);
-    if (value) {
-      storeBackendUserId(value);
-    }
-  };
-
   if (authLoading) {
     return (
       <section className="p-6">
@@ -238,19 +224,30 @@ export default function ProfilePage() {
     );
   }
 
-  if (!user) {
+  if (!firebaseUser) {
     return (
       <section className="p-6 flex flex-col gap-4">
-        <h1 className="text-xl font-semibold">Profile</h1>
+        <h1 className="text-xl font-semibold">Login required</h1>
         <p className="text-sm text-slate-600">
-          You need to be logged in to view your profile.
+          Please log in to access your profile, addresses and order history.
         </p>
+
         <button
           onClick={loginWithGoogle}
           className="rounded bg-slate-900 px-4 py-2 text-xs font-semibold text-white hover:bg-slate-800"
         >
           Login with Google
         </button>
+      </section>
+    );
+  }
+
+  if (!backendUserId) {
+    return (
+      <section className="p-6">
+        <p className="text-sm text-slate-600">
+          Connecting your account, please wait a moment.
+        </p>
       </section>
     );
   }
@@ -265,55 +262,44 @@ export default function ProfilePage() {
           </p>
         </div>
 
-        {/* dev helper for backend user id */}
         <div className="rounded border bg-white px-3 py-2 text-[11px] space-y-1 max-w-xs">
-          <p className="font-semibold">Backend user id</p>
-          <p className="text-slate-500">
-            For now enter your Mongo user id here so the profile can fetch your
-            addresses and orders.
-          </p>
-          <input
-            value={backendUserId || ""}
-            placeholder="Mongo user id"
-            onChange={(e) => handleBackendUserIdChange(e.target.value)}
-            className="mt-1 w-full rounded border px-2 py-1 text-[11px]"
-          />
+          <p className="font-semibold">Status</p>
+          <p className="text-slate-700">Logged in as {firebaseUser.email}</p>
+          <p className="text-slate-500">Backend user connected.</p>
         </div>
       </div>
 
       {error && <p className="text-sm text-red-600">{error}</p>}
 
-      {/* basic user info */}
       <div className="grid gap-4 md:grid-cols-3">
         <div className="rounded-lg border bg-white p-4 shadow-sm md:col-span-2">
           <h2 className="text-sm font-semibold mb-2">Account</h2>
           <p className="text-xs text-slate-700">
             <span className="font-semibold">Name </span>
-            {user.displayName || backendUser?.name || "(no name)"}
+            {firebaseUser.displayName ||
+              userProfile?.name ||
+              "(no name on file)"}
           </p>
           <p className="text-xs text-slate-700">
             <span className="font-semibold">Email </span>
-            {user.email}
+            {firebaseUser.email}
           </p>
-          {backendUser && (
+          {userProfile && (
             <p className="text-xs text-slate-500 mt-1">
-              Role {backendUser.role}
+              Role {userProfile.role}
             </p>
           )}
         </div>
 
         <div className="rounded-lg border bg-white p-4 shadow-sm">
-          <h2 className="text-sm font-semibold mb-2">Status</h2>
+          <h2 className="text-sm font-semibold mb-2">Summary</h2>
           <p className="text-xs text-slate-700">
-            Logged in with Google as {user.email}
+            Addresses {userProfile?.addresses?.length ?? 0}
           </p>
-          <p className="text-xs text-slate-500 mt-1">
-            Backend user {backendUserId ? "connected" : "not set yet"}
-          </p>
+          <p className="text-xs text-slate-700">Orders {orders.length}</p>
         </div>
       </div>
 
-      {/* main layout addresses, payments, orders */}
       <div className="grid gap-6 md:grid-cols-2">
         {/* addresses */}
         <div className="space-y-4">
@@ -326,8 +312,8 @@ export default function ProfilePage() {
             </div>
 
             <div className="space-y-2">
-              {backendUser?.addresses && backendUser.addresses.length > 0 ? (
-                backendUser.addresses.map((addr, index) => (
+              {userProfile?.addresses && userProfile.addresses.length > 0 ? (
+                userProfile.addresses.map((addr, index) => (
                   <div
                     key={index}
                     className="border rounded p-2 text-[11px] flex justify-between gap-2"
@@ -370,7 +356,6 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* add address form */}
           <div className="rounded-lg border bg-white p-4 shadow-sm">
             <h3 className="text-xs font-semibold mb-2">Add address</h3>
             <div className="space-y-2 text-[11px]">
@@ -512,7 +497,6 @@ export default function ProfilePage() {
 
         {/* payment methods and order history */}
         <div className="space-y-4">
-          {/* mock payment methods */}
           <div className="rounded-lg border bg-white p-4 shadow-sm">
             <h2 className="text-sm font-semibold mb-2">
               Saved payment methods (mock)
@@ -658,7 +642,6 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* order history */}
           <div className="rounded-lg border bg-white p-4 shadow-sm">
             <div className="flex items-center justify-between mb-2">
               <h2 className="text-sm font-semibold">Order history</h2>
@@ -667,42 +650,31 @@ export default function ProfilePage() {
               )}
             </div>
 
-            {backendUserId ? (
-              <div className="space-y-2 text-[11px]">
-                {orders.length === 0 ? (
-                  <p className="text-slate-500">No orders yet.</p>
-                ) : (
-                  orders.map((order) => (
-                    <div
-                      key={order._id}
-                      className="border rounded p-2 space-y-1"
-                    >
-                      <div className="flex justify-between">
-                        <p className="font-semibold">
-                          Order {order._id.slice(-8)}
-                        </p>
-                        <p className="text-slate-500">
-                          {new Date(order.createdAt).toLocaleString()}
-                        </p>
-                      </div>
-                      <p className="text-slate-600">
-                        Status {order.status} · Payment {order.paymentStatus}
-                      </p>
+            <div className="space-y-2 text-[11px]">
+              {orders.length === 0 ? (
+                <p className="text-slate-500">No orders yet.</p>
+              ) : (
+                orders.map((order) => (
+                  <div key={order._id} className="border rounded p-2 space-y-1">
+                    <div className="flex justify-between">
                       <p className="font-semibold">
-                        Total {order.totalAmount} {order.currency}
+                        Order {order._id.slice(-8)}
                       </p>
                       <p className="text-slate-500">
-                        Items {order.items.length}
+                        {new Date(order.createdAt).toLocaleString()}
                       </p>
                     </div>
-                  ))
-                )}
-              </div>
-            ) : (
-              <p className="text-[11px] text-slate-500">
-                Set the backend user id above to view order history.
-              </p>
-            )}
+                    <p className="text-slate-600">
+                      Status {order.status} · Payment {order.paymentStatus}
+                    </p>
+                    <p className="font-semibold">
+                      Total {order.totalAmount} {order.currency}
+                    </p>
+                    <p className="text-slate-500">Items {order.items.length}</p>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         </div>
       </div>

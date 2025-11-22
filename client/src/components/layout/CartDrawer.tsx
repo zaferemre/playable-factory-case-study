@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   closeCart,
   selectCartIsOpen,
@@ -10,19 +11,13 @@ import {
   clearCartLocal,
 } from "@/lib/store/cartSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/store/hooks";
-import {
-  removeItemFromCart,
-  clearCart,
-  getOrCreateCartSessionId,
-} from "@/lib/api/cartApi";
-import {
-  createOrderDraftFromCart,
-  saveOrderDraft,
-} from "@/lib/orderDraftClient";
+import { clearCart, getOrCreateCartSessionId } from "@/lib/api/cartApi";
+import { createOrderDraftFromCart } from "@/lib/orderDraftClient";
 
 export default function CartDrawer() {
   const dispatch = useAppDispatch();
   const router = useRouter();
+  const { backendUserId } = useAuth();
 
   const isOpen = useAppSelector(selectCartIsOpen);
   const items = useAppSelector(selectCartItems);
@@ -33,36 +28,38 @@ export default function CartDrawer() {
   const sessionId = getOrCreateCartSessionId();
 
   const handleRemove = async (productId: string) => {
+    // update client side immediately
     dispatch(removeItemLocal(productId));
 
-    void removeItemFromCart({
-      sessionId,
-      productId,
-    }).catch((err) => console.error("Failed to remove from backend cart", err));
+    // for now we skip per item backend removal since our new cartApi
+    // does not expose a removeItem endpoint yet. We will rely on
+    // a full clear or future sync for backend consistency.
   };
 
   const handleClearCart = async () => {
     dispatch(clearCartLocal());
 
-    void clearCart({ sessionId }).catch((err) =>
-      console.error("Failed to clear backend cart", err)
-    );
+    void clearCart({
+      userId: backendUserId ?? null,
+      sessionId: backendUserId ? null : sessionId,
+    }).catch((err) => console.error("Failed to clear backend cart", err));
   };
 
   const handleOrderNow = () => {
     if (items.length === 0) return;
 
-    // create a temporary client order id
-    const clientOrderId =
-      typeof crypto !== "undefined" && "randomUUID" in crypto
-        ? crypto.randomUUID()
-        : Math.random().toString(36).slice(2);
+    // pick currency from first product if available
+    const firstProd =
+      items[0]?.product && typeof items[0].product !== "string"
+        ? items[0].product
+        : null;
 
-    // build a draft from current cart and save it
-    const draft = createOrderDraftFromCart(clientOrderId, items);
-    saveOrderDraft(draft);
+    const currency = firstProd?.currency || "TRY";
 
-    // close drawer and go to order page
+    // new helper createOrderDraftFromCart handles creating
+    // clientOrderId and saving the draft internally
+    const clientOrderId = createOrderDraftFromCart(items, total, currency);
+
     dispatch(closeCart());
     router.push(`/order/${clientOrderId}`);
   };

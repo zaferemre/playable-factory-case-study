@@ -1,15 +1,10 @@
-import type { Request, Response } from "express";
+import { Request, Response } from "express";
 import { cartService } from "../services/cartService";
 
 export const getCartByUserId = async (req: Request, res: Response) => {
   try {
     const userId = req.params.userId;
-    const cart = await cartService.getCart({ userId });
-
-    if (!cart) {
-      return res.status(404).json({ message: "Cart not found" });
-    }
-
+    const cart = await cartService.getCartByUserId(userId);
     res.json(cart);
   } catch (err) {
     console.error("getCartByUserId error", err);
@@ -20,12 +15,7 @@ export const getCartByUserId = async (req: Request, res: Response) => {
 export const getCartBySessionId = async (req: Request, res: Response) => {
   try {
     const sessionId = req.params.sessionId;
-    const cart = await cartService.getCart({ sessionId });
-
-    if (!cart) {
-      return res.status(404).json({ message: "Cart not found" });
-    }
-
+    const cart = await cartService.getCartBySessionId(sessionId);
     res.json(cart);
   } catch (err) {
     console.error("getCartBySessionId error", err);
@@ -37,19 +27,9 @@ export const addItemToCart = async (req: Request, res: Response) => {
   try {
     const { userId, sessionId, productId, quantity } = req.body;
 
-    if (!userId && !sessionId) {
-      return res
-        .status(400)
-        .json({ message: "userId or sessionId is required" });
-    }
-
-    if (!productId) {
-      return res.status(400).json({ message: "productId is required" });
-    }
-
     const cart = await cartService.addItem({
-      userId,
-      sessionId,
+      userId: userId ?? null,
+      sessionId: sessionId ?? null,
       productId,
       quantity,
     });
@@ -57,7 +37,7 @@ export const addItemToCart = async (req: Request, res: Response) => {
     res.json(cart);
   } catch (err) {
     console.error("addItemToCart error", err);
-    res.status(500).json({ message: "Failed to add item" });
+    res.status(500).json({ message: "Failed to add item to cart" });
   }
 };
 
@@ -65,30 +45,16 @@ export const removeItemFromCart = async (req: Request, res: Response) => {
   try {
     const { userId, sessionId, productId } = req.body;
 
-    if (!userId && !sessionId) {
-      return res
-        .status(400)
-        .json({ message: "userId or sessionId is required" });
-    }
-
-    if (!productId) {
-      return res.status(400).json({ message: "productId is required" });
-    }
-
     const cart = await cartService.removeItem({
-      userId,
-      sessionId,
+      userId: userId ?? null,
+      sessionId: sessionId ?? null,
       productId,
     });
-
-    if (!cart) {
-      return res.status(404).json({ message: "Cart not found" });
-    }
 
     res.json(cart);
   } catch (err) {
     console.error("removeItemFromCart error", err);
-    res.status(500).json({ message: "Failed to remove item" });
+    res.status(500).json({ message: "Failed to remove item from cart" });
   }
 };
 
@@ -96,37 +62,17 @@ export const updateCartItemQuantity = async (req: Request, res: Response) => {
   try {
     const { userId, sessionId, productId, quantity } = req.body;
 
-    if (!userId && !sessionId) {
-      return res
-        .status(400)
-        .json({ message: "userId or sessionId is required" });
-    }
-
-    if (!productId) {
-      return res.status(400).json({ message: "productId is required" });
-    }
-
-    if (typeof quantity !== "number" || quantity < 1) {
-      return res
-        .status(400)
-        .json({ message: "quantity must be a positive number" });
-    }
-
-    const cart = await cartService.updateQuantity({
-      userId,
-      sessionId,
+    const cart = await cartService.updateItemQuantity({
+      userId: userId ?? null,
+      sessionId: sessionId ?? null,
       productId,
       quantity,
     });
 
-    if (!cart) {
-      return res.status(404).json({ message: "Cart or item not found" });
-    }
-
     res.json(cart);
   } catch (err) {
     console.error("updateCartItemQuantity error", err);
-    res.status(500).json({ message: "Failed to update quantity" });
+    res.status(500).json({ message: "Failed to update cart item quantity" });
   }
 };
 
@@ -134,19 +80,12 @@ export const clearCart = async (req: Request, res: Response) => {
   try {
     const { userId, sessionId } = req.body;
 
-    if (!userId && !sessionId) {
-      return res
-        .status(400)
-        .json({ message: "userId or sessionId is required" });
-    }
+    await cartService.clearCart({
+      userId: userId ?? null,
+      sessionId: sessionId ?? null,
+    });
 
-    const cart = await cartService.clearCart({ userId, sessionId });
-
-    if (!cart) {
-      return res.status(404).json({ message: "Cart not found" });
-    }
-
-    res.json(cart);
+    res.json({ success: true });
   } catch (err) {
     console.error("clearCart error", err);
     res.status(500).json({ message: "Failed to clear cart" });
