@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import {
   closeCart,
   selectCartIsOpen,
@@ -14,9 +15,15 @@ import {
   clearCart,
   getOrCreateCartSessionId,
 } from "@/lib/api/cartApi";
+import {
+  createOrderDraftFromCart,
+  saveOrderDraft,
+} from "@/lib/orderDraftClient";
 
 export default function CartDrawer() {
   const dispatch = useAppDispatch();
+  const router = useRouter();
+
   const isOpen = useAppSelector(selectCartIsOpen);
   const items = useAppSelector(selectCartItems);
   const total = useAppSelector(selectCartTotal);
@@ -43,7 +50,21 @@ export default function CartDrawer() {
   };
 
   const handleOrderNow = () => {
-    alert("Checkout still not implemented. This is where payment starts.");
+    if (items.length === 0) return;
+
+    // create a temporary client order id
+    const clientOrderId =
+      typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? crypto.randomUUID()
+        : Math.random().toString(36).slice(2);
+
+    // build a draft from current cart and save it
+    const draft = createOrderDraftFromCart(clientOrderId, items);
+    saveOrderDraft(draft);
+
+    // close drawer and go to order page
+    dispatch(closeCart());
+    router.push(`/order/${clientOrderId}`);
   };
 
   return (
@@ -76,11 +97,8 @@ export default function CartDrawer() {
                 typeof item.product === "string" ? null : item.product;
 
               const name = prod?.name || "Unknown product";
-
               const price = prod?.price || 0;
-
               const currency = prod?.currency || "";
-
               const image = prod?.imageUrls?.[0] || "";
 
               const id =
