@@ -30,6 +30,7 @@ export interface IOrderAddress {
 
 export interface IOrder extends Document {
   user: Types.ObjectId;
+  clientOrderId?: string; // temporary id from client, used in /order/:id route
   items: IOrderItem[];
   status: OrderStatus;
   paymentStatus: PaymentStatus;
@@ -68,6 +69,15 @@ const OrderAddressSchema = new Schema<IOrderAddress>(
 const OrderSchema = new Schema<IOrder>(
   {
     user: { type: Schema.Types.ObjectId, ref: "User", required: true },
+
+    clientOrderId: {
+      type: String,
+      required: false,
+      index: true,
+      unique: true,
+      sparse: true,
+    },
+
     items: { type: [OrderItemSchema], default: [] },
 
     status: {

@@ -15,6 +15,7 @@ export interface CreateOrderInput {
   totalAmount: number;
   currency?: string;
   shippingAddress: OrderAddress;
+  clientOrderId?: string; // temporary id from client
 }
 
 export async function createOrder(input: CreateOrderInput) {
@@ -24,5 +25,10 @@ export async function createOrder(input: CreateOrderInput) {
 
 export async function getOrderById(id: string) {
   const res = await apiClient.get<Order>(`/orders/${id}`);
+  return res.data;
+}
+
+export async function getOrderByClientOrderId(clientOrderId: string) {
+  const res = await apiClient.get<Order>(`/orders/client/${clientOrderId}`);
   return res.data;
 }

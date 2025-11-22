@@ -12,4 +12,13 @@ export const orderRepository = {
       .populate("items.product", "name slug")
       .exec();
   },
+
+  async findOrderByClientOrderId(
+    clientOrderId: string
+  ): Promise<IOrder | null> {
+    return OrderModel.findOne({ clientOrderId })
+      .populate("user", "name email")
+      .populate("items.product", "name slug")
+      .exec();
+  },
 };

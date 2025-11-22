@@ -23,3 +23,19 @@ export const getOrderById = async (req: Request, res: Response) => {
     res.status(500).json({ message: "Failed to fetch order" });
   }
 };
+
+export const getOrderByClientOrderId = async (req: Request, res: Response) => {
+  try {
+    const clientOrderId = req.params.clientOrderId;
+    const order = await orderService.getOrderByClientOrderId(clientOrderId);
+
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    res.json(order);
+  } catch (err) {
+    console.error("getOrderByClientOrderId error", err);
+    res.status(500).json({ message: "Failed to fetch order" });
+  }
+};

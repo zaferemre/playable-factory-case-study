@@ -108,6 +108,7 @@ export interface OrderAddress {
 export interface Order {
   _id: string;
   user: User | string;
+  clientOrderId?: string; // temporary id stored on the order
   items: OrderItem[];
   status: OrderStatus;
   paymentStatus: PaymentStatus;
