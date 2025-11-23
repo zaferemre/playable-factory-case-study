@@ -27,4 +27,45 @@ export const productRepository = {
       .sort({ createdAt: -1 })
       .exec();
   },
+
+  async updateProductById(
+    id: string,
+    data: Partial<IProduct>
+  ): Promise<IProduct | null> {
+    return ProductModel.findByIdAndUpdate(id, data, {
+      new: true,
+    })
+      .populate("category")
+      .exec();
+  },
+
+  async updateProductStock(
+    id: string,
+    stockQuantity: number
+  ): Promise<IProduct | null> {
+    return ProductModel.findByIdAndUpdate(
+      id,
+      { $set: { stockQuantity } },
+      { new: true }
+    )
+      .populate("category")
+      .exec();
+  },
+
+  async setProductActive(
+    id: string,
+    isActive: boolean
+  ): Promise<IProduct | null> {
+    return ProductModel.findByIdAndUpdate(
+      id,
+      { $set: { isActive } },
+      { new: true }
+    )
+      .populate("category")
+      .exec();
+  },
+
+  async deleteProduct(id: string): Promise<IProduct | null> {
+    return ProductModel.findByIdAndDelete(id).exec();
+  },
 };

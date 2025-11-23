@@ -26,7 +26,6 @@ export const userRepository = {
     const user = await UserModel.findById(userId);
     if (!user) return null;
 
-    // if this address is default, clear other defaults
     if (address.isDefault) {
       user.addresses.forEach((addr) => {
         addr.isDefault = false;
@@ -46,11 +45,48 @@ export const userRepository = {
     if (!user) return null;
 
     if (index < 0 || index >= user.addresses.length) {
-      return user; // nothing removed, but do not crash
+      return user;
     }
 
     user.addresses.splice(index, 1);
     await user.save();
     return user;
+  },
+
+  async listUsers(params: {
+    q?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<{ users: IUser[]; total: number }> {
+    const { q, page = 1, limit = 20 } = params;
+
+    const filter: Record<string, any> = {};
+    if (q) {
+      const regex = new RegExp(q, "i");
+      filter.$or = [{ name: regex }, { email: regex }];
+    }
+
+    const query = UserModel.find(filter).sort({ createdAt: -1 });
+
+    const [users, total] = await Promise.all([
+      query
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .exec(),
+      UserModel.countDocuments(filter).exec(),
+    ]);
+
+    return { users, total };
+  },
+
+  async updateUserRole(
+    userId: string,
+    role: "customer" | "admin"
+  ): Promise<IUser | null> {
+    return UserModel.findByIdAndUpdate(
+      userId,
+      { $set: { role } },
+      { new: true }
+    ).exec();
   },
 };

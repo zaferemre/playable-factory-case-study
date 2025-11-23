@@ -13,4 +13,19 @@ export const categoryService = {
   async getCategoryBySlug(slug: string): Promise<ICategory | null> {
     return categoryRepository.findCategoryBySlug(slug);
   },
+
+  async listCategories(): Promise<ICategory[]> {
+    return categoryRepository.listCategories();
+  },
+
+  async updateCategory(
+    id: string,
+    data: Partial<ICategory>
+  ): Promise<ICategory | null> {
+    return categoryRepository.updateCategory(id, data);
+  },
+
+  async deleteCategory(id: string): Promise<ICategory | null> {
+    return categoryRepository.deleteCategory(id);
+  },
 };

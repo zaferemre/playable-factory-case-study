@@ -10,7 +10,11 @@ import {
 } from "@/lib/orderDraftClient";
 import { createOrder, type CreateOrderItemInput } from "@/lib/api/orderApi";
 import type { OrderAddress, UserAddress } from "@/lib/types/types";
-import { getOrCreateCartSessionId } from "@/lib/api/cartApi";
+
+// cart clearing
+import { useAppDispatch } from "@/lib/store/hooks";
+import { clearCartLocal } from "@/lib/store/cartSlice";
+import { clearCart, getOrCreateCartSessionId } from "@/lib/api/cartApi";
 
 export default function OrderPage() {
   const params = useParams<{ clientOrderId: string }>();
@@ -24,6 +28,8 @@ export default function OrderPage() {
     loading: authLoading,
   } = useAuth();
 
+  const dispatch = useAppDispatch();
+
   const [draft, setDraft] = useState<OrderDraft | null>(null);
   const [loading, setLoading] = useState(true);
   const [placing, setPlacing] = useState(false);
@@ -32,6 +38,9 @@ export default function OrderPage() {
 
   const [address, setAddress] = useState<OrderAddress>({
     fullName: "",
+    // OrderAddress in types should have email?: string
+    // if not, add it there to match backend IOrderAddress
+    // email is useful for guest checkout
     email: "",
     line1: "",
     city: "",
@@ -104,15 +113,18 @@ export default function OrderPage() {
     }));
   }, [backendUser, backendUserId]);
 
-  const handleAddressChange = (field: keyof OrderAddress, value: string) => {
-    setAddress((prev) => ({
+  const handleAddressChange = (
+    field: keyof OrderAddress | "email",
+    value: string
+  ) => {
+    setAddress((prev: any) => ({
       ...prev,
       [field]: value,
     }));
   };
 
   const handleUseSavedAddress = (addr: UserAddress) => {
-    setAddress((prev) => ({
+    setAddress((prev: any) => ({
       ...prev,
       fullName: addr.fullName,
       line1: addr.line1,
@@ -155,11 +167,12 @@ export default function OrderPage() {
       ? { user: backendUserId }
       : { sessionId };
 
-    // if user is logged in but address email is empty, default it
-    const shippingAddress: OrderAddress = {
+    const resolvedEmail =
+      address.email || backendUser?.email || firebaseUser?.email || undefined;
+
+    const shippingAddress: any = {
       ...address,
-      email:
-        address.email || backendUser?.email || firebaseUser?.email || undefined,
+      email: resolvedEmail,
     };
 
     setPlacing(true);
@@ -173,9 +186,21 @@ export default function OrderPage() {
         clientOrderId,
       });
 
+      // clear local Redux cart
+      dispatch(clearCartLocal());
+
+      // clear backend cart for user or guest
+      void clearCart({
+        userId: backendUserId ?? null,
+        sessionId: backendUserId ? null : sessionId || null,
+      }).catch((err) => {
+        console.error("Failed to clear backend cart after order", err);
+      });
+
       deleteOrderDraft(clientOrderId);
       setSuccessMessage("Order created successfully.");
       console.log("Created order", order);
+      // optional redirect to an order detail page
       // router.push(`/orders/${order._id}`);
     } catch (err: any) {
       console.error("createOrder error", err);
@@ -210,8 +235,6 @@ export default function OrderPage() {
       </section>
     );
   }
-
-  // No login gate here any more, guests can continue
 
   return (
     <section className="flex flex-col gap-6 p-6 max-w-4xl mx-auto">
@@ -273,7 +296,7 @@ export default function OrderPage() {
         <div className="space-y-3 rounded-lg border bg-white p-4 shadow-sm">
           <h2 className="text-sm font-semibold">Shipping address</h2>
 
-          {/* saved addresses for logged in users only */}
+          {/* saved addresses for logged in users */}
           {backendUserId && savedAddresses.length > 0 && (
             <div className="mb-3 rounded border bg-slate-50 p-2 max-h-40 overflow-y-auto">
               <p className="text-[11px] font-semibold text-slate-700 mb-1">
@@ -327,6 +350,7 @@ export default function OrderPage() {
             <div>
               <label className="mb-1 block text-slate-600">Email</label>
               <input
+                // @ts-expect-error email on address
                 value={address.email || ""}
                 onChange={(e) => handleAddressChange("email", e.target.value)}
                 className="w-full rounded border px-2 py-1 text-xs"

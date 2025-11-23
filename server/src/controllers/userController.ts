@@ -62,3 +62,50 @@ export const removeUserAddress = async (req: Request, res: Response) => {
     res.status(500).json({ message: "Failed to remove address" });
   }
 };
+
+// admin list users
+export const listUsers = async (req: Request, res: Response) => {
+  try {
+    const { q, page = "1", limit = "20" } = req.query;
+    const parsedPage = Number(page) || 1;
+    const parsedLimit = Number(limit) || 20;
+
+    const result = await userService.listUsers({
+      q: q as string | undefined,
+      page: parsedPage,
+      limit: parsedLimit,
+    });
+
+    res.json({
+      users: result.users,
+      total: result.total,
+      page: parsedPage,
+      limit: parsedLimit,
+    });
+  } catch (err) {
+    console.error("listUsers error", err);
+    res.status(500).json({ message: "Failed to fetch users" });
+  }
+};
+
+// admin update role
+export const updateUserRole = async (req: Request, res: Response) => {
+  try {
+    const id = req.params.id;
+    const { role } = req.body as { role?: "customer" | "admin" };
+
+    if (role !== "customer" && role !== "admin") {
+      return res.status(400).json({ message: "Invalid role" });
+    }
+
+    const updated = await userService.updateUserRole(id, role);
+    if (!updated) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.json(updated);
+  } catch (err) {
+    console.error("updateUserRole error", err);
+    res.status(500).json({ message: "Failed to update user role" });
+  }
+};

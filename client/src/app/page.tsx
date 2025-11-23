@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import type { Product } from "@/lib/types/types";
 import { getAvailableProducts } from "@/lib/api/productApi";
 import ProductList from "@/components/product/ProductList";
+import Hero from "@/components/home/Hero";
 
 export default function HomePage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -26,56 +27,65 @@ export default function HomePage() {
   }, []);
 
   return (
-    <section className="flex w-full flex-col gap-6 p-6">
-      {/* HEADER */}
-      <div>
-        <h1 className="text-2xl font-semibold">Welcome to Playable Shop</h1>
-        <p className="max-w-xl text-sm text-slate-600">
-          This is the ecommerce case study built with Next.js, TypeScript,
-          Tailwind, Redis caching, and an Express backend.
-        </p>
+    <main className="w-full">
+      {/* HERO, increased scale and removed container padding */}
+      <div className="w-full">
+        <Hero />
       </div>
 
-      {/* FEATURE CARDS */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <div className="rounded-lg border bg-white p-4 shadow-sm">
-          <h2 className="mb-1 text-sm font-semibold">Browse products</h2>
-          <p className="text-xs text-slate-600">
-            The shop page will show categories, filters, and search.
+      {/* MAIN CONTENT */}
+      <section className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-6 py-12">
+        {/* HEADER */}
+        <div className="space-y-2">
+          <h2 className="text-2xl font-bold">
+            Welcome to PlayableFactory Cereal Shop
+          </h2>
+          <p className="max-w-xl text-base text-slate-600">
+            A case study ecommerce experience built with Next.js, TypeScript,
+            Tailwind, Redis caching and an Express backend.
           </p>
         </div>
-        <div className="rounded-lg border bg-white p-4 shadow-sm">
-          <h2 className="mb-1 text-sm font-semibold">Cart and checkout</h2>
-          <p className="text-xs text-slate-600">
-            Add products to cart and simulate checkout with a dummy payment.
-          </p>
+
+        {/* FEATURE CARDS */}
+        <div className="grid gap-6 md:grid-cols-3">
+          <div className="rounded-xl border bg-white p-6 shadow-sm">
+            <h3 className="mb-2 text-base font-semibold">Browse cereals</h3>
+            <p className="text-sm text-slate-600">
+              Explore fun flavors, playful boxes and limited editions.
+            </p>
+          </div>
+          <div className="rounded-xl border bg-white p-6 shadow-sm">
+            <h3 className="mb-2 text-base font-semibold">Cart and checkout</h3>
+            <p className="text-sm text-slate-600">
+              Add cereals to cart and simulate checkout with a dummy payment.
+            </p>
+          </div>
+          <div className="rounded-xl border bg-white p-6 shadow-sm">
+            <h3 className="mb-2 text-base font-semibold">Admin dashboard</h3>
+            <p className="text-sm text-slate-600">
+              Manage cereal products and view example orders and customers.
+            </p>
+          </div>
         </div>
-        <div className="rounded-lg border bg-white p-4 shadow-sm">
-          <h2 className="mb-1 text-sm font-semibold">Admin dashboard</h2>
-          <p className="text-xs text-slate-600">
-            Manage products and view orders and customers.
-          </p>
+
+        {/* PRODUCT SECTION */}
+        <div className="mt-4">
+          <h2 className="mb-4 text-xl font-semibold">Latest cereals</h2>
+
+          {loading && (
+            <p className="text-sm text-slate-500">Loading products...</p>
+          )}
+          {error && <p className="text-sm text-red-600">{error}</p>}
+
+          {!loading && !error && products.length === 0 && (
+            <p className="text-sm text-slate-600">No products yet.</p>
+          )}
+
+          {!loading && !error && products.length > 0 && (
+            <ProductList products={products} />
+          )}
         </div>
-      </div>
-
-      {/* PRODUCT SECTION */}
-      <div className="mt-6">
-        <h2 className="text-lg font-semibold mb-3">Latest products</h2>
-
-        {loading && (
-          <p className="text-sm text-slate-500">Loading products...</p>
-        )}
-        {error && <p className="text-sm text-red-600">{error}</p>}
-
-        {!loading && !error && products.length === 0 && (
-          <p className="text-sm text-slate-600">No products yet.</p>
-        )}
-
-        {/* new product list component */}
-        {!loading && !error && products.length > 0 && (
-          <ProductList products={products} />
-        )}
-      </div>
-    </section>
+      </section>
+    </main>
   );
 }

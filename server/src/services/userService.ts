@@ -32,4 +32,19 @@ export const userService = {
   ): Promise<IUser | null> {
     return userRepository.removeAddressFromUser(userId, index);
   },
+
+  async listUsers(params: {
+    q?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<{ users: IUser[]; total: number }> {
+    return userRepository.listUsers(params);
+  },
+
+  async updateUserRole(
+    userId: string,
+    role: "customer" | "admin"
+  ): Promise<IUser | null> {
+    return userRepository.updateUserRole(userId, role);
+  },
 };

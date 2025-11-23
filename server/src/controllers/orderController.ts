@@ -50,3 +50,67 @@ export const getOrdersForUser = async (req: Request, res: Response) => {
     res.status(500).json({ message: "Failed to fetch orders" });
   }
 };
+
+// admin: list all orders with filters
+export const getAllOrders = async (req: Request, res: Response) => {
+  try {
+    const { status, userId, limit, page } = req.query;
+
+    const orders = await orderService.getAllOrders({
+      status: typeof status === "string" ? status : undefined,
+      userId: typeof userId === "string" ? userId : undefined,
+      limit:
+        typeof limit === "string"
+          ? Number.parseInt(limit, 10) || undefined
+          : undefined,
+      page:
+        typeof page === "string"
+          ? Number.parseInt(page, 10) || undefined
+          : undefined,
+    });
+
+    res.json(orders);
+  } catch (err) {
+    console.error("getAllOrders error", err);
+    res.status(500).json({ message: "Failed to fetch orders" });
+  }
+};
+
+// admin: update order status
+export const updateOrderStatus = async (req: Request, res: Response) => {
+  try {
+    const id = req.params.id;
+    const { status } = req.body as { status?: string };
+
+    if (!status) {
+      return res.status(400).json({ message: "status is required" });
+    }
+
+    // optional strict validation
+    const allowed = ["pending", "paid", "shipped", "completed", "cancelled"];
+    if (!allowed.includes(status)) {
+      return res.status(400).json({ message: "Invalid status value" });
+    }
+
+    const updated = await orderService.updateOrderStatus(id, status);
+    if (!updated) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    res.json(updated);
+  } catch (err) {
+    console.error("updateOrderStatus error", err);
+    res.status(500).json({ message: "Failed to update order status" });
+  }
+};
+
+// admin: overview
+export const getOrdersOverview = async (_req: Request, res: Response) => {
+  try {
+    const overview = await orderService.getOrdersOverview();
+    res.json(overview);
+  } catch (err) {
+    console.error("getOrdersOverview error", err);
+    res.status(500).json({ message: "Failed to fetch orders overview" });
+  }
+};
