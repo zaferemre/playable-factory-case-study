@@ -1,11 +1,16 @@
 // src/controllers/productController.ts
 import { Request, Response } from "express";
 import { productService } from "../services/productService";
+import CacheService from "../services/cacheService";
 import type { ProductSortBy } from "../dataAccess/productRepository";
 
 export const createProduct = async (req: Request, res: Response) => {
   try {
     const product = await productService.createProduct(req.body);
+
+    // Invalidate product caches
+    await CacheService.invalidateProductCache();
+
     res.status(201).json(product);
   } catch (err: any) {
     console.error("createProduct error", err);
@@ -23,10 +28,22 @@ export const createProduct = async (req: Request, res: Response) => {
 
 export const getProductById = async (req: Request, res: Response) => {
   try {
-    const product = await productService.getProductById(req.params.id);
+    const productId = req.params.id;
+
+    // Try to get from cache first
+    const cachedProduct = await CacheService.getProductById(productId);
+    if (cachedProduct) {
+      return res.json(cachedProduct);
+    }
+
+    const product = await productService.getProductById(productId);
     if (!product) {
       return res.status(404).json({ message: "Product not found" });
     }
+
+    // Cache the result
+    await CacheService.setProductById(productId, product);
+
     res.json(product);
   } catch (err) {
     console.error("getProductById error", err);
@@ -36,10 +53,22 @@ export const getProductById = async (req: Request, res: Response) => {
 
 export const getProductBySlug = async (req: Request, res: Response) => {
   try {
-    const product = await productService.getProductBySlug(req.params.slug);
+    const slug = req.params.slug;
+
+    // Try to get from cache first
+    const cachedProduct = await CacheService.getProductBySlug(slug);
+    if (cachedProduct) {
+      return res.json(cachedProduct);
+    }
+
+    const product = await productService.getProductBySlug(slug);
     if (!product) {
       return res.status(404).json({ message: "Product not found" });
     }
+
+    // Cache the result
+    await CacheService.setProductBySlug(slug, product);
+
     res.json(product);
   } catch (err) {
     console.error("getProductBySlug error", err);
@@ -88,13 +117,39 @@ export const listAvailableProducts = async (req: Request, res: Response) => {
 
     const parsedLimit = limit ? Number(limit) || 1000 : 1000;
 
+    const queryStr = q as string | undefined;
+    const categoryIdStr = categoryId as string | undefined;
+    const sortByStr = sortBy as ProductSortBy;
+    const sortDirStr = sortDir === "asc" ? "asc" : "desc";
+
+    // Try to get from cache first
+    const cachedProducts = await CacheService.getAvailableProducts(
+      queryStr,
+      categoryIdStr,
+      sortByStr,
+      sortDirStr
+    );
+
+    if (cachedProducts) {
+      return res.json(cachedProducts);
+    }
+
     const products = await productService.listAvailableProducts({
-      q: q as string | undefined,
-      categoryId: categoryId as string | undefined,
-      sortBy: sortBy as ProductSortBy,
-      sortDir: sortDir === "asc" ? "asc" : "desc",
+      q: queryStr,
+      categoryId: categoryIdStr,
+      sortBy: sortByStr,
+      sortDir: sortDirStr,
       limit: parsedLimit,
     });
+
+    // Cache the result
+    await CacheService.setAvailableProducts(
+      products,
+      queryStr,
+      categoryIdStr,
+      sortByStr,
+      sortDirStr
+    );
 
     res.json(products);
   } catch (err) {
@@ -111,6 +166,10 @@ export const updateProduct = async (req: Request, res: Response) => {
     if (!updated) {
       return res.status(404).json({ message: "Product not found" });
     }
+
+    // Invalidate caches for this specific product and all product lists
+    await CacheService.invalidateProductCache(id, updated.slug);
+
     res.json(updated);
   } catch (err: any) {
     console.error("updateProduct error", err);
@@ -140,6 +199,10 @@ export const updateProductStock = async (req: Request, res: Response) => {
     if (!updated) {
       return res.status(404).json({ message: "Product not found" });
     }
+
+    // Invalidate caches for this specific product and all product lists
+    await CacheService.invalidateProductCache(id, updated.slug);
+
     res.json(updated);
   } catch (err) {
     console.error("updateProductStock error", err);

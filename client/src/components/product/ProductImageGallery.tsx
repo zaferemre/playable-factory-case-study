@@ -43,7 +43,7 @@ export default function ProductImageGallery({
             <img
               src={activeImage}
               alt={productName}
-              className="relative z-10 h-full w-full object-contain p-8"
+              className="relative  h-full w-full object-contain p-8"
               onLoad={() => setImageLoading(false)}
             />
           ) : (

@@ -65,7 +65,7 @@ export const authService = {
       sessionCart = await cartRepository.getCartBySessionId(sessionId);
     }
 
-    if (sessionCart) {
+    if (sessionId && sessionCart) {
       const existingItems = userCart?.items ?? [];
       const mergedItems = [...existingItems];
 

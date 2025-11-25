@@ -363,18 +363,42 @@ export default function Hero() {
         </Link>
       </motion.div>
 
-      {/* Scroll indicator - mobile only */}
+      {/* Scroll indicator - visible on all devices */}
       <motion.div
-        className="absolute bottom-4 left-1/2 -translate-x-1/2 lg:hidden"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 1 }}
+        className="absolute bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center cursor-pointer"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 1.2, duration: 0.8 }}
+        onClick={() => {
+          const nextSection = document.querySelector(
+            "main > section:nth-child(2)"
+          );
+          nextSection?.scrollIntoView({ behavior: "smooth" });
+        }}
       >
+        <span className="text-xs font-medium text-slate-400 mb-2 hidden sm:block">
+          Scroll to explore
+        </span>
         <motion.div
-          className="w-1 h-8 bg-gradient-to-b from-transparent via-slate-300 to-transparent rounded-full"
-          animate={{ opacity: [1, 0.3, 1] }}
-          transition={{ duration: 2, repeat: Infinity }}
-        />
+          className="flex flex-col items-center space-y-1"
+          animate={{ y: [0, 8, 0] }}
+          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+        >
+          <div className="w-0.5 h-6 bg-gradient-to-b from-slate-300 to-slate-400 rounded-full" />
+          <svg
+            className="w-4 h-4 text-slate-400"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M19 14l-7 7m0 0l-7-7m7 7V3"
+            />
+          </svg>
+        </motion.div>
       </motion.div>
     </motion.section>
   );

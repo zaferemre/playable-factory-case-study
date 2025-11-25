@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import { connectDB } from "./config/mongoose";
+import { connectRedis } from "./config/redis";
 
 import userRoutes from "./routes/userRoutes";
 import categoryRoutes from "./routes/categoryRoutes";
@@ -34,6 +35,7 @@ const PORT = process.env.PORT || 3001;
 
 const start = async () => {
   await connectDB();
+  await connectRedis();
 
   app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);

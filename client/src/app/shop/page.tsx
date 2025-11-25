@@ -162,47 +162,9 @@ export default function ShopPage() {
   };
 
   return (
-    <main className="min-h-screen bg-linear-to-b from-white via-slate-50/30 to-white">
-      {/* Hero Header */}
-      <motion.section
-        className="py-16 lg:py-20 bg-linear-to-br from-white via-red-50/20 to-orange-50/30 relative overflow-hidden"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.8 }}
-      >
-        {/* Background decoration */}
-        <div className="absolute inset-0 opacity-30">
-          <div className="absolute top-20 right-20 w-64 h-64 bg-red-100 rounded-full blur-3xl"></div>
-          <div className="absolute bottom-20 left-20 w-80 h-80 bg-orange-100 rounded-full blur-3xl"></div>
-        </div>
-
-        <div className="max-w-6xl mx-auto px-6 relative z-10 text-center">
-          <motion.div
-            initial={{ y: 30, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-          >
-            <div className="inline-flex items-center gap-2 px-6 py-3 bg-linear-to-r from-red-100 to-orange-100 text-red-700 rounded-full text-sm font-medium mb-8 shadow-sm">
-              <IconSparkles size={16} />
-              Premium Cereal Collection
-            </div>
-
-            <h1 className="text-4xl lg:text-5xl xl:text-6xl font-bold text-slate-900 mb-6">
-              Shop Our
-              <span className="text-red-600 ml-4">Complete Range</span>
-            </h1>
-
-            <p className="text-xl text-slate-600 max-w-3xl mx-auto leading-relaxed mb-8">
-              Discover every flavor in our gaming-inspired cereal collection.
-              From classic favorites to limited editions, find your perfect
-              breakfast companion.
-            </p>
-          </motion.div>
-        </div>
-      </motion.section>
-
+    <main className="min-h-screen bg-linear-to-b from-white via-slate-50/30 to-white pt-4">
       {/* Main Content with Sidebar Layout */}
-      <div className="max-w-7xl mx-auto px-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-4 lg:px-6">
         {/* Header Bar with Sorting */}
         <ShopHeaderBar
           totalCount={totalCount}
@@ -375,7 +337,7 @@ export default function ShopPage() {
                     </h2>
                   </motion.div>
 
-                  <div className="grid gap-6 grid-cols-2 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
+                  <div className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
                     {filteredAndSortedProducts.map((product, index) => (
                       <motion.div
                         key={product._id}

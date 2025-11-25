@@ -1,9 +1,11 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { IconPackage, IconEye } from "@tabler/icons-react";
 import { useRouter } from "next/navigation";
 import type { Order } from "@/lib/types/types";
 import StatusBadge from "@/components/shared/StatusBadge";
 import LoadingSpinner from "@/components/shared/LoadingSpinner";
+import OrderDetailsModal from "@/components/admin/orders/OrderDetailsModal";
 import ProfileEmptyState from "./ProfileEmptyState";
 
 interface ProfileOrderHistoryProps {
@@ -16,6 +18,7 @@ export function ProfileOrderHistory({
   ordersLoading,
 }: ProfileOrderHistoryProps) {
   const router = useRouter();
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
   if (ordersLoading) {
     return (
@@ -80,9 +83,7 @@ export function ProfileOrderHistory({
                 <div className="flex items-center space-x-3">
                   <StatusBadge status={order.status} size="sm" />
                   <motion.button
-                    onClick={() =>
-                      router.push(`/order/${order.clientOrderId || order._id}`)
-                    }
+                    onClick={() => setSelectedOrder(order)}
                     className="flex items-center space-x-1 px-3 py-1 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-md transition-colors"
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
@@ -154,6 +155,14 @@ export function ProfileOrderHistory({
             </motion.div>
           ))}
         </div>
+      )}
+
+      {/* Order Details Modal */}
+      {selectedOrder && (
+        <OrderDetailsModal
+          order={selectedOrder}
+          onClose={() => setSelectedOrder(null)}
+        />
       )}
     </motion.div>
   );
