@@ -11,6 +11,8 @@ import {
   User as FirebaseUser,
   onAuthStateChanged,
   signInWithPopup,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
   signOut,
 } from "firebase/auth";
 import { auth, googleProvider } from "@/firebase";
@@ -25,7 +27,13 @@ interface AuthContextShape {
   idToken: string | null;
   loading: boolean;
   loginWithGoogle: () => Promise<void>;
+  loginWithEmail: (email: string, password: string) => Promise<void>;
+  signUpWithEmail: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  isAdmin: boolean;
+  showLoginModal: boolean;
+  openLoginModal: () => void;
+  closeLoginModal: () => void;
 }
 
 const AuthContext = createContext<AuthContextShape | undefined>(undefined);
@@ -36,6 +44,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [backendUserId, setBackendUserId] = useState<string | null>(null);
   const [idToken, setIdToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+
+  const isAdmin = backendUser?.role === "admin";
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (fbUser) => {
@@ -86,9 +97,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await signInWithPopup(auth, googleProvider);
   };
 
+  const loginWithEmail = async (email: string, password: string) => {
+    await signInWithEmailAndPassword(auth, email, password);
+  };
+
+  const signUpWithEmail = async (email: string, password: string) => {
+    await createUserWithEmailAndPassword(auth, email, password);
+  };
+
   const logout = async () => {
     await signOut(auth);
   };
+
+  const openLoginModal = () => setShowLoginModal(true);
+  const closeLoginModal = () => setShowLoginModal(false);
 
   const value: AuthContextShape = {
     firebaseUser,
@@ -97,7 +119,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     idToken,
     loading,
     loginWithGoogle,
+    loginWithEmail,
+    signUpWithEmail,
     logout,
+    isAdmin,
+    showLoginModal,
+    openLoginModal,
+    closeLoginModal,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

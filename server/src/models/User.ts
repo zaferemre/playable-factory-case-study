@@ -2,8 +2,8 @@ import { Schema, model, type Document } from "mongoose";
 
 export type UserRole = "customer" | "admin";
 
-export interface IUserAddress {
-  label?: string;
+// Base address structure
+export interface IBaseAddress {
   fullName: string;
   line1: string;
   line2?: string;
@@ -12,17 +12,27 @@ export interface IUserAddress {
   postalCode: string;
   country: string;
   phone?: string;
+}
+
+// User address extends base with label and default flag
+export interface IUserAddress extends IBaseAddress {
+  label?: string;
   isDefault?: boolean;
 }
 
 export interface IUser extends Document {
-  uid?: string;
+  uid?: string; // Firebase uid
   email: string;
   name: string;
   photoUrl?: string;
   role: UserRole;
-  passwordHash?: string; // Only used if email/password auth is added
   addresses: IUserAddress[];
+
+  // new denormalized stats
+  orderCount: number;
+  totalSpent: number;
+  lastOrderAt?: Date;
+
   createdAt: Date;
   updatedAt: Date;
 }
@@ -46,6 +56,7 @@ const UserAddressSchema = new Schema<IUserAddress>(
 const UserSchema = new Schema<IUser>(
   {
     uid: { type: String, index: true },
+
     email: { type: String, required: true, unique: true, index: true },
     name: { type: String, required: true },
     photoUrl: { type: String },
@@ -55,14 +66,16 @@ const UserSchema = new Schema<IUser>(
       enum: ["customer", "admin"],
       default: "customer",
       required: true,
+      index: true,
     },
-
-    passwordHash: { type: String },
 
     addresses: {
       type: [UserAddressSchema],
       default: [],
     },
+    orderCount: { type: Number, default: 0, index: true },
+    totalSpent: { type: Number, default: 0, index: true },
+    lastOrderAt: { type: Date, index: true },
   },
   { timestamps: true }
 );

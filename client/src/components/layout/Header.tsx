@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect } from "react";
-import Image from "next/image";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { motion } from "motion/react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAppDispatch, useAppSelector } from "@/lib/store/hooks";
 import {
@@ -15,22 +15,54 @@ import {
   getCartForCurrentUser,
   getOrCreateCartSessionId,
 } from "@/lib/api/cartApi";
+import { getAvailableProducts } from "@/lib/api/productApi";
+import type { Product } from "@/lib/types/types";
 
 import {
   IconSearch,
+  IconHome,
   IconShoppingCart,
-  IconUser,
-  IconLogout,
+  IconBuilding,
 } from "@tabler/icons-react";
 
+// Import modular components
+import MobileSearchModal from "./header/MobileSearchModal";
+import MobileDock from "./header/MobileDock";
+import DesktopSearch from "./header/DesktopSearch";
+import AuthSection from "./header/AuthSection";
+import CartButton from "./header/CartButton";
+import LoginModal from "../auth/LoginModal";
+
 export default function Header() {
-  const { firebaseUser, backendUserId, loading, loginWithGoogle, logout } =
-    useAuth();
+  const {
+    firebaseUser,
+    backendUserId,
+    loading,
+    logout,
+    isAdmin,
+    showLoginModal,
+    openLoginModal,
+    closeLoginModal,
+  } = useAuth();
 
   const dispatch = useAppDispatch();
   const cartCount = useAppSelector(selectCartCount);
   const loadedFromServer = useAppSelector(selectCartLoadedFromServer);
 
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  // search state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<Product[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [isSearchActive, setIsSearchActive] = useState(false);
+  const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
+
+  // cart bump animation
+  const [cartBump, setCartBump] = useState(false);
+  const prevCartCountRef = useRef<number>(0);
+
+  // hydrate guest cart
   useEffect(() => {
     if (!backendUserId && !loadedFromServer) {
       const hydrateGuest = async () => {
@@ -46,6 +78,7 @@ export default function Header() {
     }
   }, [backendUserId, loadedFromServer, dispatch]);
 
+  // hydrate user cart
   useEffect(() => {
     if (!backendUserId) return;
 
@@ -61,124 +94,253 @@ export default function Header() {
     hydrateUser();
   }, [backendUserId, dispatch]);
 
+  // scroll shadow
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 0);
+    };
+
+    handleScroll();
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  // cart bump when items added
+  useEffect(() => {
+    const prev = prevCartCountRef.current;
+    if (cartCount > prev) {
+      setCartBump(true);
+      const id = window.setTimeout(() => setCartBump(false), 250);
+      return () => window.clearTimeout(id);
+    }
+    prevCartCountRef.current = cartCount;
+  }, [cartCount]);
+
   const handleCartClick = () => {
     dispatch(openCart());
   };
 
-  const avatarLetter =
-    firebaseUser?.email?.charAt(0)?.toUpperCase() ??
-    firebaseUser?.displayName?.charAt(0)?.toUpperCase() ??
-    "P";
+  // product search logic with debounce
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
+      setSearchLoading(false);
+      return;
+    }
+
+    setSearchLoading(true);
+    const q = searchQuery.trim();
+
+    let cancelled = false;
+    const id = window.setTimeout(() => {
+      const run = async () => {
+        try {
+          const products = await getAvailableProducts({ q });
+          if (!cancelled) {
+            setSearchResults(products.slice(0, 6)); // show top 6
+          }
+        } catch {
+          if (!cancelled) {
+            setSearchResults([]);
+          }
+        } finally {
+          if (!cancelled) {
+            setSearchLoading(false);
+          }
+        }
+      };
+      void run();
+    }, 250);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(id);
+    };
+  }, [searchQuery]);
+
+  // Search handlers
+  const openSearch = () => setIsSearchActive(true);
+  const closeSearch = () => {
+    setIsSearchActive(false);
+    setSearchQuery("");
+    setSearchResults([]);
+  };
+  const clearSearch = () => {
+    setSearchQuery("");
+    setSearchResults([]);
+  };
+
+  const openMobileSearch = () => setIsMobileSearchOpen(true);
+  const closeMobileSearch = () => {
+    setIsMobileSearchOpen(false);
+    setSearchQuery("");
+    setSearchResults([]);
+  };
 
   return (
-    <header className=" bg-white">
-      <div className="mx-auto flex max-w-6xl items-center px-4 py-3 lg:px-8 lg:py-4">
-        {/* Left logo */}
-        <Link href="/" className="flex items-center gap-2">
-          <span className="text-xl font-semibold tracking-tight text-slate-900">
-            Playable
-            <span className="font-normal text-slate-500">Shop</span>
-          </span>
-        </Link>
-
-        {/* Center nav */}
-        <nav className="flex flex-1 items-center justify-center gap-8 text-sm font-medium text-slate-700 leading-none">
-          <Link href="/" className="hover:text-slate-900">
-            Home
-          </Link>
-          <Link href="/shop" className="hover:text-slate-900">
-            Shop
-          </Link>
-          <Link href="/admin" className="hover:text-slate-900">
-            Admin
-          </Link>
-        </nav>
-
-        {/* Right actions */}
-        <div className="flex items-center gap-4">
-          {/* Search */}
-          <button
-            aria-label="Search"
-            className="flex h-9 w-9 items-center justify-center rounded-full hover:bg-slate-100"
-            type="button"
-          >
-            <IconSearch size={18} stroke={1.8} className="text-slate-700" />
-          </button>
-
-          {/* Cart */}
-          <button
-            onClick={handleCartClick}
-            aria-label="Open cart"
-            className="relative flex h-9 w-9 items-center justify-center rounded-full hover:bg-slate-100"
-            type="button"
-          >
-            <IconShoppingCart
-              size={20}
-              stroke={1.8}
-              className="text-slate-700"
-            />
-            {cartCount > 0 && (
-              <span className="absolute right-0 top-0 flex h-3 w-3 translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-red-500 text-[8px] font-semibold text-white">
-                {cartCount > 9 ? "9+" : cartCount}
-              </span>
-            )}
-          </button>
-
-          {/* Auth section */}
-          {loading ? (
-            <span className="text-xs text-slate-500">Checking</span>
-          ) : firebaseUser ? (
-            <div className="flex items-center gap-3">
-              {/* Profile icon button */}
-              <Link
-                href="/profile"
-                aria-label="Profile"
-                className="flex h-9 w-9 items-center justify-center rounded-full hover:bg-slate-100"
-              >
-                <IconUser size={20} stroke={1.6} className="text-slate-700" />
-              </Link>
-
-              {/* Logout icon button */}
-              <button
-                onClick={logout}
-                aria-label="Logout"
-                className="flex h-9 w-9 items-center justify-center rounded-full hover:bg-slate-100"
-                type="button"
-              >
-                <IconLogout size={20} stroke={1.6} className="text-slate-700" />
-              </button>
-
-              {/* Avatar */}
-              <Link
-                href="/profile"
-                className="relative flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-slate-200"
-              >
-                {firebaseUser.photoURL ? (
-                  <Image
-                    src={firebaseUser.photoURL}
-                    alt="Profile"
-                    fill
-                    sizes="36px"
-                    className="object-cover"
-                  />
-                ) : (
-                  <span className="text-xs font-semibold text-slate-700">
-                    {avatarLetter}
-                  </span>
-                )}
-              </Link>
-            </div>
-          ) : (
-            <button
-              onClick={loginWithGoogle}
-              className="flex h-9 items-center rounded-full bg-slate-900 px-5 text-xs font-semibold text-white hover:bg-slate-800"
-              type="button"
+    <>
+      {/* Desktop Header */}
+      <motion.header
+        className="sticky top-0 z-40 bg-white/90 backdrop-blur-lg border-b border-slate-200/50 hidden md:block"
+        initial={{ y: -16, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.35 }}
+      >
+        <motion.div
+          className="relative mx-auto flex max-w-7xl items-center px-6 lg:px-8"
+          animate={{
+            paddingTop: isScrolled ? 16 : 24,
+            paddingBottom: isScrolled ? 16 : 24,
+            boxShadow: isScrolled
+              ? "0 10px 25px rgba(15,23,42,0.12)"
+              : "0 0 0 rgba(0,0,0,0)",
+          }}
+          transition={{ duration: 0.3, ease: "easeOut" }}
+        >
+          {/* Left logo */}
+          <Link href="/" className="flex items-center gap-2">
+            <motion.span
+              className="text-2xl font-bold tracking-tight text-slate-900"
+              animate={{
+                fontSize: isScrolled ? "1.25rem" : "1.5rem",
+              }}
+              transition={{ duration: 0.3 }}
             >
-              Login
-            </button>
-          )}
-        </div>
+              Playable
+              <span className="font-normal text-slate-500">Shop</span>
+            </motion.span>
+          </Link>
+
+          {/* Spacer */}
+          <div className="flex-1" />
+
+          {/* Center nav */}
+          <nav className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-8">
+            <motion.div
+              whileHover={{ y: -2 }}
+              className="flex items-center gap-2 text-slate-700 hover:text-slate-900 transition-colors"
+            >
+              <IconHome size={18} stroke={1.6} />
+              <Link href="/" className="text-sm font-medium">
+                Home
+              </Link>
+            </motion.div>
+            <motion.div
+              whileHover={{ y: -2 }}
+              className="flex items-center gap-2 text-slate-700 hover:text-slate-900 transition-colors"
+            >
+              <IconShoppingCart size={18} stroke={1.6} />
+              <Link href="/shop" className="text-sm font-medium">
+                Shop
+              </Link>
+            </motion.div>
+            {isAdmin && (
+              <motion.div
+                whileHover={{ y: -2 }}
+                className="flex items-center gap-2 text-slate-700 hover:text-slate-900 transition-colors"
+              >
+                <IconBuilding size={18} stroke={1.6} />
+                <Link href="/admin" className="text-sm font-medium">
+                  Admin
+                </Link>
+              </motion.div>
+            )}
+          </nav>
+
+          {/* Spacer */}
+          <div className="flex-1" />
+
+          {/* Right section: search + cart + auth */}
+          <div className="flex items-center gap-4">
+            <DesktopSearch
+              searchQuery={searchQuery}
+              searchResults={searchResults}
+              searchLoading={searchLoading}
+              isSearchActive={isSearchActive}
+              onSearchChange={setSearchQuery}
+              onSearchOpen={openSearch}
+              onSearchClose={closeSearch}
+              onClearSearch={clearSearch}
+            />
+
+            <CartButton
+              cartCount={cartCount}
+              cartBump={cartBump}
+              onClick={handleCartClick}
+              className="h-11 w-11"
+            />
+
+            <AuthSection
+              loading={loading}
+              firebaseUser={firebaseUser}
+              logout={logout}
+              openLoginModal={openLoginModal}
+            />
+          </div>
+        </motion.div>
+      </motion.header>
+
+      {/* Mobile Header */}
+      <div className="md:hidden">
+        {/* Top Bar with Logo */}
+        <motion.div
+          className="sticky top-0 z-40 bg-white/95 backdrop-blur-lg border-b border-slate-200/50 px-4 py-3"
+          initial={{ y: -16, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.35 }}
+        >
+          <div className="flex items-center justify-between">
+            <Link href="/" className="flex items-center gap-2">
+              <span className="text-lg font-bold tracking-tight text-slate-900">
+                Playable
+                <span className="font-normal text-slate-500">Shop</span>
+              </span>
+            </Link>
+
+            {/* Mobile search and cart */}
+            <div className="flex items-center gap-3">
+              <motion.button
+                onClick={openMobileSearch}
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 transition-colors"
+                whileTap={{ scale: 0.95 }}
+              >
+                <IconSearch size={16} stroke={1.8} className="text-slate-600" />
+              </motion.button>
+
+              <CartButton
+                cartCount={cartCount}
+                cartBump={cartBump}
+                onClick={handleCartClick}
+                className="h-9 w-9"
+              />
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Mobile Search Modal */}
+        <MobileSearchModal
+          isOpen={isMobileSearchOpen}
+          searchQuery={searchQuery}
+          searchResults={searchResults}
+          searchLoading={searchLoading}
+          onClose={closeMobileSearch}
+          onSearchChange={setSearchQuery}
+          onClearSearch={clearSearch}
+        />
+
+        {/* Bottom Dock */}
+        <MobileDock
+          cartCount={cartCount}
+          firebaseUser={firebaseUser}
+          loading={loading}
+          logout={logout}
+          openLoginModal={openLoginModal}
+          isAdmin={isAdmin}
+        />
       </div>
-    </header>
+
+      {/* Login Modal */}
+      <LoginModal isOpen={showLoginModal} onClose={closeLoginModal} />
+    </>
   );
 }

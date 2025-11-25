@@ -1,5 +1,7 @@
+// src/controllers/orderController.ts
 import { Request, Response } from "express";
 import { orderService } from "../services/orderService";
+import type { OrderStatus } from "../models/Order";
 
 export const createOrder = async (req: Request, res: Response) => {
   try {
@@ -80,14 +82,19 @@ export const getAllOrders = async (req: Request, res: Response) => {
 export const updateOrderStatus = async (req: Request, res: Response) => {
   try {
     const id = req.params.id;
-    const { status } = req.body as { status?: string };
+    const { status } = req.body as { status?: OrderStatus };
 
     if (!status) {
       return res.status(400).json({ message: "status is required" });
     }
 
-    // optional strict validation
-    const allowed = ["pending", "paid", "shipped", "completed", "cancelled"];
+    const allowed: OrderStatus[] = [
+      "draft",
+      "placed",
+      "fulfilled",
+      "cancelled",
+    ];
+
     if (!allowed.includes(status)) {
       return res.status(400).json({ message: "Invalid status value" });
     }

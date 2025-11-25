@@ -1,6 +1,5 @@
-// src/lib/api/adminApi.ts
 import { apiClient } from "./apiClient";
-import type { Product, Order, User } from "../types/types";
+import type { Product, Order, User, OrderStatus } from "../types/types";
 
 export interface AdminOverview {
   totals: {
@@ -8,8 +7,15 @@ export interface AdminOverview {
     activeProducts: number;
     users: number;
     orders: number;
-    revenuePaid: number;
-    revenuePending: number;
+    ordersByStatus: {
+      draft: number;
+      placed: number;
+      fulfilled: number;
+      cancelled: number;
+    };
+    revenuePlaced: number;
+    revenueFulfilled: number;
+    revenueTotal: number;
   };
   recentOrders: Order[];
   lowStockProducts: Product[];
@@ -47,10 +53,13 @@ export interface AdminOrderFilter {
 
 export interface AdminUserSearchResult {
   users: User[];
+  total: number;
+  page: number;
+  limit: number;
 }
 
 // overview for dashboard
-// backend route expected: GET /orders/overview
+// backend route: GET /orders/overview
 export async function getAdminOverview() {
   const res = await apiClient.get<AdminOverview>("/orders/overview");
   return res.data;
@@ -100,22 +109,41 @@ export async function getAdminOrders(filter: AdminOrderFilter = {}) {
 }
 
 // search users by query (email or name)
-// backend route: GET /users?query=...
-export async function searchAdminUsers(query: string) {
-  const res = await apiClient.get<User[]>("/users", {
-    params: { query },
+// backend route: GET /users?q=...
+export async function searchAdminUsers(
+  query: string,
+  page = 1,
+  limit = 20
+): Promise<AdminUserSearchResult> {
+  const res = await apiClient.get<{
+    users: User[];
+    total: number;
+    page: number;
+    limit: number;
+  }>("/users", {
+    params: { q: query, page, limit },
   });
 
-  const data: AdminUserSearchResult = {
-    users: res.data,
+  return {
+    users: res.data.users,
+    total: res.data.total,
+    page: res.data.page,
+    limit: res.data.limit,
   };
-
-  return data;
 }
 
 // orders for a single user
 // backend route: GET /orders/user/:userId
 export async function getAdminOrdersForUser(userId: string) {
   const res = await apiClient.get<Order[]>(`/orders/user/${userId}`);
+  return res.data;
+}
+
+// update order status
+// backend route: PATCH /orders/:id/status
+export async function updateOrderStatus(orderId: string, status: OrderStatus) {
+  const res = await apiClient.patch<Order>(`/orders/${orderId}/status`, {
+    status,
+  });
   return res.data;
 }

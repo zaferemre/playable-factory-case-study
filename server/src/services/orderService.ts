@@ -1,5 +1,5 @@
 // src/services/orderService.ts
-import { IOrder } from "../models/Order";
+import { IOrder, type OrderStatus } from "../models/Order";
 import { orderRepository } from "../dataAccess/orderRepository";
 import { ProductModel } from "../models/Product";
 import { UserModel } from "../models/User";
@@ -13,25 +13,58 @@ interface GetAllOrdersOptions {
 
 export const orderService = {
   async createOrder(data: Partial<IOrder>): Promise<IOrder> {
-    // 1 create order as before
-    const order = await orderRepository.createOrder(data);
+    // build safe items with lineTotal recalculated
+    const items = (data.items ?? []).map((item) => {
+      const quantity = item.quantity ?? 0;
+      const unitPrice = item.unitPrice ?? 0;
+      const lineTotal = unitPrice * quantity;
 
-    // 2 decrease product stock based on ordered quantities
-    // best effort, we do not block order if some products are missing
-    const updates = order.items.map((item) => {
-      const productId = item.product; // this is an ObjectId
-
-      return ProductModel.updateOne(
-        { _id: productId },
-        {
-          // simple decrement, you can make this more strict later
-          $inc: { stockQuantity: -item.quantity },
-        }
-      ).exec();
+      return {
+        product: item.product,
+        name: item.name,
+        quantity,
+        unitPrice,
+        lineTotal,
+      };
     });
 
-    await Promise.all(updates).catch((err) => {
-      console.error("Failed to update product stock after order", err);
+    const totalAmount = items.reduce(
+      (sum, item) => sum + (item.lineTotal ?? 0),
+      0
+    );
+
+    const shippingAddress = data.shippingAddress;
+    if (!shippingAddress) {
+      throw new Error("shippingAddress is required to create an order");
+    }
+
+    const now = new Date();
+
+    const orderToCreate: Partial<IOrder> = {
+      user: data.user,
+      sessionId: data.sessionId,
+      clientOrderId: data.clientOrderId,
+      items,
+      status: "placed",
+      totalAmount,
+      currency: data.currency ?? "TRY",
+      shippingAddress,
+      customerName: (data as any).customerName ?? shippingAddress.fullName,
+      customerEmail:
+        (data as any).customerEmail ?? shippingAddress.email ?? undefined,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    // 1, create order
+    const order = await orderRepository.createOrder(orderToCreate);
+
+    // 2, update product stock and stats, and user stats
+    await Promise.all([
+      updateProductStatsForOrder(order),
+      updateUserStatsForOrder(order),
+    ]).catch((err) => {
+      console.error("post order stats update failed", err);
     });
 
     return order;
@@ -55,23 +88,40 @@ export const orderService = {
     const limit = options.limit && options.limit > 0 ? options.limit : 50;
     const skip = (page - 1) * limit;
 
+    const status =
+      options.status === "draft" ||
+      options.status === "placed" ||
+      options.status === "fulfilled" ||
+      options.status === "cancelled"
+        ? (options.status as OrderStatus)
+        : undefined;
+
     return orderRepository.listAllOrders({
-      status: options.status,
+      status,
       userId: options.userId,
       skip,
       limit,
     });
   },
 
-  async updateOrderStatus(id: string, status: string): Promise<IOrder | null> {
+  async updateOrderStatus(
+    id: string,
+    status: OrderStatus
+  ): Promise<IOrder | null> {
+    // for now, status changes do not recalc stats
+    // if you later want to adjust stats on cancel etc, hook that here
     return orderRepository.updateOrderStatus(id, status);
   },
 
   async getOrdersOverview() {
     const [
       ordersCount,
-      revenuePaid,
-      revenuePending,
+      draftCount,
+      placedCount,
+      fulfilledCount,
+      cancelledCount,
+      revenuePlaced,
+      revenueFulfilled,
       recentOrders,
       productsCount,
       activeProductsCount,
@@ -79,8 +129,12 @@ export const orderService = {
       lowStockProducts,
     ] = await Promise.all([
       orderRepository.countAllOrders(),
-      orderRepository.sumRevenueByPaymentStatus("paid"),
-      orderRepository.sumRevenueByPaymentStatus("pending"),
+      orderRepository.countOrdersByStatus("draft"),
+      orderRepository.countOrdersByStatus("placed"),
+      orderRepository.countOrdersByStatus("fulfilled"),
+      orderRepository.countOrdersByStatus("cancelled"),
+      orderRepository.sumRevenueForStatuses(["placed"]),
+      orderRepository.sumRevenueForStatuses(["fulfilled"]),
       orderRepository.findRecentOrders(10),
 
       ProductModel.countDocuments().exec(),
@@ -106,11 +160,87 @@ export const orderService = {
         activeProducts: activeProductsCount,
         users: usersCount,
         orders: ordersCount,
-        revenuePaid,
-        revenuePending,
+        ordersByStatus: {
+          draft: draftCount,
+          placed: placedCount,
+          fulfilled: fulfilledCount,
+          cancelled: cancelledCount,
+        },
+        revenuePlaced,
+        revenueFulfilled,
+        revenueTotal: revenuePlaced + revenueFulfilled,
       },
       recentOrders,
       lowStockProducts,
     };
   },
 };
+
+// internal helpers
+
+async function updateProductStatsForOrder(order: IOrder) {
+  const createdAt = order.createdAt ?? new Date();
+
+  // aggregate per product in case the same product occurs more than once
+  const perProduct = new Map<
+    string,
+    { quantity: number; revenue: number; orderCount: number }
+  >();
+
+  for (const item of order.items) {
+    const id = String(item.product);
+    const existing = perProduct.get(id) ?? {
+      quantity: 0,
+      revenue: 0,
+      orderCount: 0,
+    };
+
+    existing.quantity += item.quantity;
+    existing.revenue += item.lineTotal;
+    existing.orderCount += 1;
+
+    perProduct.set(id, existing);
+  }
+
+  const updates: Promise<any>[] = [];
+
+  perProduct.forEach((agg, productId) => {
+    updates.push(
+      ProductModel.updateOne(
+        { _id: productId },
+        {
+          $inc: {
+            stockQuantity: -agg.quantity,
+            orderCount: agg.orderCount,
+            totalUnitsSold: agg.quantity,
+            totalRevenue: agg.revenue,
+          },
+          $set: {
+            lastOrderedAt: createdAt,
+          },
+        }
+      ).exec()
+    );
+  });
+
+  await Promise.all(updates);
+}
+
+async function updateUserStatsForOrder(order: IOrder) {
+  if (!order.user) return;
+
+  const createdAt = order.createdAt ?? new Date();
+
+  await UserModel.updateOne(
+    { _id: order.user },
+    {
+      $inc: {
+        orderCount: 1,
+        totalSpent: order.totalAmount,
+      },
+      $set: {
+        lastOrderAt: createdAt,
+      },
+    }
+  ).exec();
+}

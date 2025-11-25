@@ -1,7 +1,8 @@
-import { IOrder, OrderModel } from "../models/Order";
+// src/dataAccess/orderRepository.ts
+import { IOrder, OrderModel, type OrderStatus } from "../models/Order";
 
 interface AdminOrderListFilter {
-  status?: string;
+  status?: OrderStatus;
   userId?: string;
   skip?: number;
   limit?: number;
@@ -59,7 +60,10 @@ export const orderRepository = {
       .exec();
   },
 
-  async updateOrderStatus(id: string, status: string): Promise<IOrder | null> {
+  async updateOrderStatus(
+    id: string,
+    status: OrderStatus
+  ): Promise<IOrder | null> {
     return OrderModel.findByIdAndUpdate(id, { status }, { new: true })
       .populate("user", "name email")
       .populate("items.product", "name slug")
@@ -71,9 +75,13 @@ export const orderRepository = {
     return OrderModel.countDocuments().exec();
   },
 
-  async sumRevenueByPaymentStatus(paymentStatus: string): Promise<number> {
+  async countOrdersByStatus(status: OrderStatus): Promise<number> {
+    return OrderModel.countDocuments({ status }).exec();
+  },
+
+  async sumRevenueForStatuses(statuses: OrderStatus[]): Promise<number> {
     const result = await OrderModel.aggregate([
-      { $match: { paymentStatus } },
+      { $match: { status: { $in: statuses } } },
       {
         $group: {
           _id: null,

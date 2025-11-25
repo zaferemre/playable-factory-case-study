@@ -1,9 +1,12 @@
+// src/routes/userRoutes.ts
 import { Router } from "express";
 import {
   createUser,
   getUserById,
+  updateUserProfile,
   addUserAddress,
   removeUserAddress,
+  setDefaultAddress,
   listUsers,
   updateUserRole,
 } from "../controllers/userController";
@@ -12,20 +15,26 @@ import { requireAdmin } from "../middlewares/requireAdmin";
 
 const router = Router();
 
-// admin list users
+// admin list users with search and sorting
 router.get("/", verifyFirebaseToken, requireAdmin, listUsers);
 
 // admin update role
 router.patch("/:id/role", verifyFirebaseToken, requireAdmin, updateUserRole);
 
-// create user (used from auth sync, probably not admin only)
+// create user (called from auth sync)
 router.post("/", createUser);
 
-// get single user
-router.get("/:id", getUserById);
+// get single user (could be used for profile, you might want auth here)
+router.get("/:id", verifyFirebaseToken, getUserById);
+
+// update profile (name, photo)
+router.patch("/:id", verifyFirebaseToken, updateUserProfile);
 
 // user addresses
-router.post("/:id/addresses", addUserAddress);
-router.delete("/:id/addresses/:index", removeUserAddress);
+router.post("/:id/addresses", verifyFirebaseToken, addUserAddress);
+router.delete("/:id/addresses/:index", verifyFirebaseToken, removeUserAddress);
+
+// set default address
+router.patch("/:id/addresses/default", verifyFirebaseToken, setDefaultAddress);
 
 export default router;

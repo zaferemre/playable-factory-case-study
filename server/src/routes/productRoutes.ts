@@ -1,7 +1,9 @@
+// src/routes/productRoutes.ts
 import { Router } from "express";
 import {
   createProduct,
   getProductById,
+  getProductBySlug,
   listAllProducts,
   listAvailableProducts,
   updateProduct,
@@ -15,10 +17,13 @@ import { requireAdmin } from "../middlewares/requireAdmin";
 
 const router = Router();
 
-// public shop
+// public shop, list available products, supports q, categoryId, sortBy, sortDir
 router.get("/", listAvailableProducts);
 
-// admin list all products
+// public product detail by slug, for nice urls like /products/kitkat-cereal
+router.get("/slug/:slug", getProductBySlug);
+
+// admin list all products (can see inactive and out of stock)
 router.get("/all", verifyFirebaseToken, requireAdmin, listAllProducts);
 
 // admin create product
@@ -52,7 +57,7 @@ router.patch(
 // admin delete
 router.delete("/:id", verifyFirebaseToken, requireAdmin, deleteProduct);
 
-// public product detail
+// public product detail by id (fallback)
 router.get("/:id", getProductById);
 
 export default router;

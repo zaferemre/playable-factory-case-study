@@ -1,7 +1,9 @@
+// src/lib/types/types.ts
+
 export type UserRole = "customer" | "admin";
 
-export interface UserAddress {
-  label?: string;
+// Base address structure used across the application
+export interface BaseAddress {
   fullName: string;
   line1: string;
   line2?: string;
@@ -10,6 +12,11 @@ export interface UserAddress {
   postalCode: string;
   country: string;
   phone?: string;
+}
+
+// User address extends base with label and default flag
+export interface UserAddress extends BaseAddress {
+  label?: string;
   isDefault?: boolean;
 }
 
@@ -21,6 +28,12 @@ export interface User {
   photoUrl?: string;
   role: UserRole;
   addresses: UserAddress[];
+
+  // denormalized stats from backend
+  orderCount: number;
+  totalSpent: number;
+  lastOrderAt?: string;
+
   createdAt: string;
   updatedAt: string;
 }
@@ -46,8 +59,17 @@ export interface Product {
   imageUrls: string[];
   isActive: boolean;
   stockQuantity: number;
+
+  // review stats
   averageRating: number;
   reviewCount: number;
+
+  // order denormalized stats
+  orderCount: number;
+  totalUnitsSold: number;
+  totalRevenue: number;
+  lastOrderedAt?: string;
+
   createdAt: string;
   updatedAt: string;
 }
@@ -77,14 +99,8 @@ export interface Cart {
   updatedAt: string;
 }
 
-export type OrderStatus =
-  | "pending"
-  | "paid"
-  | "shipped"
-  | "completed"
-  | "cancelled";
-
-export type PaymentStatus = "pending" | "paid" | "failed" | "refunded";
+// we removed paymentStatus from backend for mock payments
+export type OrderStatus = "draft" | "placed" | "fulfilled" | "cancelled";
 
 export interface OrderItem {
   product: Product | string;
@@ -94,26 +110,18 @@ export interface OrderItem {
   lineTotal: number;
 }
 
-export interface OrderAddress {
-  fullName: string;
-  email?: string; // added, useful for guests and contact
-  line1: string;
-  line2?: string;
-  city: string;
-  state?: string;
-  postalCode: string;
-  country: string;
-  phone?: string;
+// Order address extends base with optional email for guest orders
+export interface OrderAddress extends BaseAddress {
+  email?: string; // useful for guests and contact
 }
 
 export interface Order {
   _id: string;
-  user?: User | string; // now optional for guest orders
-  sessionId?: string; // added, to link guest orders to a session
+  user?: User | string; // optional for guest orders
+  sessionId?: string; // links guest orders to a session
   clientOrderId?: string; // temporary id stored on the order
   items: OrderItem[];
   status: OrderStatus;
-  paymentStatus: PaymentStatus;
   totalAmount: number;
   currency: string;
   shippingAddress: OrderAddress;

@@ -1,5 +1,9 @@
+// src/services/categoryService.ts
 import { ICategory } from "../models/Category";
-import { categoryRepository } from "../dataAccess/categoryRepository";
+import {
+  categoryRepository,
+  type ListCategoryParams,
+} from "../dataAccess/categoryRepository";
 
 export const categoryService = {
   async createCategory(data: Partial<ICategory>): Promise<ICategory> {
@@ -14,8 +18,12 @@ export const categoryService = {
     return categoryRepository.findCategoryBySlug(slug);
   },
 
-  async listCategories(): Promise<ICategory[]> {
-    return categoryRepository.listCategories();
+  async listCategories(params: ListCategoryParams = {}): Promise<ICategory[]> {
+    return categoryRepository.listCategories(params);
+  },
+
+  async listAllCategories(): Promise<ICategory[]> {
+    return categoryRepository.listAllCategories();
   },
 
   async updateCategory(

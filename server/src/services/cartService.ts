@@ -1,133 +1,182 @@
-import { cartRepository } from "../dataAccess/cartRepository";
+// src/services/cartService.ts
+import { Types } from "mongoose";
+import { cartRepository, type CartOwner } from "../dataAccess/cartRepository";
 import { CartModel, type ICart } from "../models/Cart";
-import type { Types } from "mongoose";
+import { ProductModel } from "../models/Product";
 
-interface GetCartOpts {
-  userId?: string | null;
-  sessionId?: string | null;
+interface BaseCartItemInput extends CartOwner {
+  productId: string;
 }
 
-interface ItemChangeOpts extends GetCartOpts {
-  productId: string;
+interface AddItemInput extends BaseCartItemInput {
   quantity?: number;
 }
 
-const getOrCreateCart = async ({
-  userId,
-  sessionId,
-}: GetCartOpts): Promise<ICart> => {
-  if (userId) {
-    let cart = await cartRepository.getCartByUserId(userId);
-    if (!cart) {
-      cart = await cartRepository.createCart({
-        user: userId as unknown as Types.ObjectId,
-        items: [],
-      });
-    }
-    return cart;
-  }
+interface RemoveItemInput extends CartOwner {
+  productId: string;
+}
 
-  if (!sessionId) {
-    throw new Error("sessionId required for guest cart");
-  }
+interface UpdateItemQuantityInput extends BaseCartItemInput {
+  quantity: number;
+}
 
-  let cart = await cartRepository.getCartBySessionId(sessionId);
-  if (!cart) {
-    cart = await cartRepository.createCart({
-      sessionId,
-      items: [],
-    });
-  }
-  return cart;
-};
+interface ClearCartInput extends CartOwner {}
 
 export const cartService = {
-  async getCartByUserId(userId: string) {
+  async getCartByUserId(userId: string): Promise<ICart | null> {
+    if (!userId) return null;
     const cart = await cartRepository.getCartByUserId(userId);
-    if (cart) return cart;
-    // always return a cart structure, even if empty
-    return cartRepository.createCart({
-      user: userId as unknown as Types.ObjectId,
-      items: [],
-    });
+    return cart;
   },
 
-  async getCartBySessionId(sessionId: string) {
+  async getCartBySessionId(sessionId: string): Promise<ICart | null> {
+    if (!sessionId) return null;
     const cart = await cartRepository.getCartBySessionId(sessionId);
-    if (cart) return cart;
-    return cartRepository.createCart({
-      sessionId,
-      items: [],
-    });
+    return cart;
   },
 
-  async addItem(opts: ItemChangeOpts) {
-    const { userId, sessionId, productId, quantity = 1 } = opts;
+  async addItem(input: AddItemInput): Promise<ICart> {
+    const { userId, sessionId, productId } = input;
+    let { quantity } = input;
 
-    const cart = await getOrCreateCart({ userId, sessionId });
+    if (!userId && !sessionId) {
+      throw new Error("userId or sessionId is required");
+    }
 
-    const existing = cart.items.find(
-      (it) => it.product.toString() === productId
+    if (!productId) {
+      throw new Error("productId is required");
+    }
+
+    quantity = quantity ?? 1;
+    if (
+      typeof quantity !== "number" ||
+      !Number.isFinite(quantity) ||
+      quantity <= 0
+    ) {
+      throw new Error("quantity must be a positive number");
+    }
+
+    const productExists = await ProductModel.exists({
+      _id: productId,
+      isActive: true,
+    });
+    if (!productExists) {
+      throw new Error("Product not found or inactive");
+    }
+
+    const cart = await cartRepository.findOrCreateCart({ userId, sessionId });
+
+    const productIdStr = String(productId);
+    const existingIndex = cart.items.findIndex(
+      (item) => String(item.product) === productIdStr
     );
 
-    if (existing) {
-      existing.quantity += quantity;
+    if (existingIndex >= 0) {
+      cart.items[existingIndex].quantity += quantity;
+      if (cart.items[existingIndex].quantity <= 0) {
+        cart.items.splice(existingIndex, 1);
+      }
     } else {
       cart.items.push({
-        product: productId as unknown as Types.ObjectId,
+        product: new Types.ObjectId(productId),
         quantity,
       });
     }
 
-    return cartRepository.saveCart(cart);
+    await cart.save();
+
+    return reloadCart(cart._id);
   },
 
-  async removeItem(opts: ItemChangeOpts) {
-    const { userId, sessionId, productId } = opts;
+  async removeItem(input: RemoveItemInput): Promise<ICart | null> {
+    const { userId, sessionId, productId } = input;
 
-    const cart = await getOrCreateCart({ userId, sessionId });
+    if (!userId && !sessionId) {
+      throw new Error("userId or sessionId is required");
+    }
+    if (!productId) {
+      throw new Error("productId is required");
+    }
 
-    cart.items = cart.items.filter((it) => it.product.toString() !== productId);
+    const cart = await cartRepository.findOrCreateCart({ userId, sessionId });
 
-    return cartRepository.saveCart(cart);
+    const productIdStr = String(productId);
+    const newItems = cart.items.filter(
+      (item) => String(item.product) !== productIdStr
+    );
+    cart.items = newItems;
+
+    await cart.save();
+
+    return reloadCart(cart._id);
   },
 
-  async updateItemQuantity(opts: ItemChangeOpts) {
-    const { userId, sessionId, productId, quantity = 1 } = opts;
+  async updateItemQuantity(input: UpdateItemQuantityInput): Promise<ICart> {
+    const { userId, sessionId, productId, quantity } = input;
 
-    const cart = await getOrCreateCart({ userId, sessionId });
+    if (!userId && !sessionId) {
+      throw new Error("userId or sessionId is required");
+    }
+    if (!productId) {
+      throw new Error("productId is required");
+    }
+    if (typeof quantity !== "number" || !Number.isFinite(quantity)) {
+      throw new Error("quantity must be a number");
+    }
 
-    const item = cart.items.find((it) => it.product.toString() === productId);
-    if (!item) {
-      // item not in cart, treat as add
-      cart.items.push({
-        product: productId as unknown as Types.ObjectId,
-        quantity,
-      });
+    const cart = await cartRepository.findOrCreateCart({ userId, sessionId });
+
+    const productIdStr = String(productId);
+    const index = cart.items.findIndex(
+      (item) => String(item.product) === productIdStr
+    );
+
+    if (quantity <= 0) {
+      if (index >= 0) {
+        cart.items.splice(index, 1);
+      }
     } else {
-      item.quantity = quantity;
-      if (item.quantity <= 0) {
-        cart.items = cart.items.filter(
-          (it) => it.product.toString() !== productId
-        );
+      if (index >= 0) {
+        cart.items[index].quantity = quantity;
+      } else {
+        cart.items.push({
+          product: new Types.ObjectId(productId),
+          quantity,
+        });
       }
     }
 
-    return cartRepository.saveCart(cart);
+    await cart.save();
+
+    return reloadCart(cart._id);
   },
 
-  async clearCart(opts: GetCartOpts) {
-    const { userId, sessionId } = opts;
+  async clearCart(input: ClearCartInput): Promise<void> {
+    const { userId, sessionId } = input;
+
+    if (!userId && !sessionId) {
+      throw new Error("userId or sessionId is required");
+    }
 
     if (userId) {
       await cartRepository.clearCartByUserId(userId);
-      return;
+    } else if (sessionId) {
+      await cartRepository.clearCartBySessionId(sessionId);
     }
-
-    if (!sessionId) {
-      throw new Error("sessionId required for guest cart");
-    }
-
-    await cartRepository.clearCartBySessionId(sessionId);
   },
 };
+
+async function reloadCart(cartId: any): Promise<ICart> {
+  const cart = await CartModel.findById(cartId)
+    .populate(
+      "items.product",
+      "name slug price imageUrls currency stockQuantity isActive"
+    )
+    .exec();
+
+  if (!cart) {
+    throw new Error("Cart not found after update");
+  }
+
+  return cart;
+}

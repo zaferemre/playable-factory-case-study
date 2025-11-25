@@ -1,6 +1,10 @@
+// src/services/userService.ts
 import { IUser } from "../models/User";
-import { userRepository } from "../dataAccess/userRepository";
-import type { IUserAddress } from "../models/User";
+import {
+  userRepository,
+  type ListUsersParams,
+} from "../dataAccess/userRepository";
+import type { IUserAddress, UserRole } from "../models/User";
 
 export const userService = {
   async createUser(data: Partial<IUser>): Promise<IUser> {
@@ -33,18 +37,27 @@ export const userService = {
     return userRepository.removeAddressFromUser(userId, index);
   },
 
-  async listUsers(params: {
-    q?: string;
-    page?: number;
-    limit?: number;
-  }): Promise<{ users: IUser[]; total: number }> {
+  async setDefaultAddress(
+    userId: string,
+    index: number
+  ): Promise<IUser | null> {
+    return userRepository.setDefaultAddress(userId, index);
+  },
+
+  async updateUserProfile(
+    userId: string,
+    data: { name?: string; photoUrl?: string }
+  ): Promise<IUser | null> {
+    return userRepository.updateUserProfile(userId, data);
+  },
+
+  async listUsers(
+    params: ListUsersParams
+  ): Promise<{ users: IUser[]; total: number }> {
     return userRepository.listUsers(params);
   },
 
-  async updateUserRole(
-    userId: string,
-    role: "customer" | "admin"
-  ): Promise<IUser | null> {
+  async updateUserRole(userId: string, role: UserRole): Promise<IUser | null> {
     return userRepository.updateUserRole(userId, role);
   },
 };

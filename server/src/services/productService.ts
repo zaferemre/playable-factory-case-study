@@ -1,9 +1,30 @@
+// src/services/productService.ts
 import { IProduct } from "../models/Product";
-import { productRepository } from "../dataAccess/productRepository";
+import {
+  productRepository,
+  type ListProductsParams,
+} from "../dataAccess/productRepository";
+
+const sanitizeProductInput = (data: Partial<IProduct>): Partial<IProduct> => {
+  const {
+    orderCount,
+    totalUnitsSold,
+    totalRevenue,
+    lastOrderedAt,
+    averageRating,
+    reviewCount,
+    createdAt,
+    updatedAt,
+    ...rest
+  } = data as any;
+
+  return rest;
+};
 
 export const productService = {
   async createProduct(data: Partial<IProduct>): Promise<IProduct> {
-    return productRepository.createProduct(data);
+    const clean = sanitizeProductInput(data);
+    return productRepository.createProduct(clean);
   },
 
   async getProductById(id: string): Promise<IProduct | null> {
@@ -14,19 +35,24 @@ export const productService = {
     return productRepository.findProductBySlug(slug);
   },
 
-  async getAllProducts(): Promise<IProduct[]> {
-    return productRepository.listAllProducts();
+  // admin list
+  async listAllProducts(params: ListProductsParams = {}): Promise<IProduct[]> {
+    return productRepository.listAllProducts(params);
   },
 
-  async getAvailableProducts(): Promise<IProduct[]> {
-    return productRepository.listAvailableProducts();
+  // public list
+  async listAvailableProducts(
+    params: ListProductsParams = {}
+  ): Promise<IProduct[]> {
+    return productRepository.listAvailableProducts(params);
   },
 
   async updateProduct(
     id: string,
     data: Partial<IProduct>
   ): Promise<IProduct | null> {
-    return productRepository.updateProductById(id, data);
+    const clean = sanitizeProductInput(data);
+    return productRepository.updateProductById(id, clean);
   },
 
   async updateProductStock(

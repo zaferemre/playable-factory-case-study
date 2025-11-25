@@ -52,7 +52,6 @@ const cartSlice = createSlice({
           quantity: 1,
         });
       }
-      state.isOpen = true;
     },
     removeItemLocal(state, action: PayloadAction<string>) {
       const productId = action.payload;

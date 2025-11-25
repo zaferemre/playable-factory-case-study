@@ -1,17 +1,20 @@
+/* Load Fredoka + Nunito from Google Fonts */
+@import url("https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600;700&family=Nunito:wght@300;400;500;600;700&display=swap");
+
+/* Tailwind */
 @import "tailwindcss";
 
+/* Theme variables */
 :root {
   --background: #ffffff;
   --foreground: #171717;
+
+  /* Your new font variables */
+  --font-fredoka: "Fredoka", system-ui, sans-serif;
+  --font-nunito: "Nunito", system-ui, sans-serif;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
+/* Dark mode */
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
@@ -19,8 +22,14 @@
   }
 }
 
+/* Global reset: allow Tailwind to decide font */
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+
+  /* REMOVE the hard coded Arial that was blocking your fonts */
+  /* old: font-family: Arial, Helvetica, sans-serif; */
+
+  /* Use your Fredoka font by default */
+  font-family: var(--font-fredoka);
 }

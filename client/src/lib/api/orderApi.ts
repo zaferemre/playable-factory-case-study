@@ -6,19 +6,22 @@ export interface CreateOrderItemInput {
   name: string;
   quantity: number;
   unitPrice: number;
-  lineTotal: number;
+  // optional, backend recalculates line totals anyway
+  lineTotal?: number;
 }
 
 export interface CreateOrderInput {
   user?: string; // optional, for logged in orders
   sessionId?: string; // optional, for guest orders
   items: CreateOrderItemInput[];
-  totalAmount: number;
+  // optional, backend recalculates from items
+  totalAmount?: number;
   currency?: string;
   shippingAddress: OrderAddress;
   clientOrderId?: string;
 }
 
+// create order, backend route: POST /orders
 export async function createOrder(input: CreateOrderInput) {
   const res = await apiClient.post<Order>("/orders", input);
   return res.data;

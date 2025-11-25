@@ -1,3 +1,4 @@
+// src/lib/api/cartApi.ts
 import { apiClient } from "./apiClient";
 import type { Cart } from "../types/types";
 
@@ -15,11 +16,9 @@ export function getOrCreateCartSessionId(): string {
   return id;
 }
 
-// get cart for current user or guest, matches
-// GET /cart/user/:userId and GET /cart/session/:sessionId
 export async function getCartForCurrentUser(opts: {
-  userId?: string | null;
-  sessionId?: string | null;
+  userId?: string;
+  sessionId?: string;
 }) {
   const { userId, sessionId } = opts;
 
@@ -36,18 +35,18 @@ export async function getCartForCurrentUser(opts: {
   return res.data;
 }
 
-// add item, matches POST /cart/item/add
+// add item
 export async function addItemToCart(opts: {
-  userId?: string | null;
-  sessionId?: string | null;
+  userId?: string;
+  sessionId?: string;
   productId: string;
   quantity: number;
 }) {
   const { userId, sessionId, productId, quantity } = opts;
 
   const payload = {
-    userId: userId ?? null,
-    sessionId: userId ? null : sessionId ?? null,
+    userId,
+    sessionId: userId ? undefined : sessionId,
     productId,
     quantity,
   };
@@ -56,17 +55,17 @@ export async function addItemToCart(opts: {
   return res.data;
 }
 
-// optional remove, matches POST /cart/item/remove
+// remove item
 export async function removeItemFromCart(opts: {
-  userId?: string | null;
-  sessionId?: string | null;
+  userId?: string;
+  sessionId?: string;
   productId: string;
 }) {
   const { userId, sessionId, productId } = opts;
 
   const payload = {
-    userId: userId ?? null,
-    sessionId: userId ? null : sessionId ?? null,
+    userId,
+    sessionId: userId ? undefined : sessionId,
     productId,
   };
 
@@ -74,18 +73,18 @@ export async function removeItemFromCart(opts: {
   return res.data;
 }
 
-// optional quantity update, matches POST /cart/item/update
+// update quantity
 export async function updateCartItemQuantity(opts: {
-  userId?: string | null;
-  sessionId?: string | null;
+  userId?: string;
+  sessionId?: string;
   productId: string;
   quantity: number;
 }) {
   const { userId, sessionId, productId, quantity } = opts;
 
   const payload = {
-    userId: userId ?? null,
-    sessionId: userId ? null : sessionId ?? null,
+    userId,
+    sessionId: userId ? undefined : sessionId,
     productId,
     quantity,
   };
@@ -94,16 +93,13 @@ export async function updateCartItemQuantity(opts: {
   return res.data;
 }
 
-// clear cart, matches POST /cart/clear
-export async function clearCart(opts: {
-  userId?: string | null;
-  sessionId?: string | null;
-}) {
+// clear cart
+export async function clearCart(opts: { userId?: string; sessionId?: string }) {
   const { userId, sessionId } = opts;
 
   const payload = {
-    userId: userId ?? null,
-    sessionId: userId ? null : sessionId ?? null,
+    userId,
+    sessionId: userId ? undefined : sessionId,
   };
 
   await apiClient.post("/cart/clear", payload);

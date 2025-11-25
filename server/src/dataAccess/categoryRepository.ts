@@ -1,4 +1,9 @@
+// src/dataAccess/categoryRepository.ts
 import { ICategory, CategoryModel } from "../models/Category";
+
+export interface ListCategoryParams {
+  onlyActive?: boolean;
+}
 
 export const categoryRepository = {
   async createCategory(data: Partial<ICategory>): Promise<ICategory> {
@@ -14,8 +19,20 @@ export const categoryRepository = {
     return CategoryModel.findOne({ slug }).exec();
   },
 
-  async listCategories(): Promise<ICategory[]> {
-    return CategoryModel.find().sort({ createdAt: -1 }).exec();
+  async listCategories(params: ListCategoryParams = {}): Promise<ICategory[]> {
+    const filter: Record<string, any> = {};
+
+    if (params.onlyActive) {
+      filter.isActive = true;
+    }
+
+    // name sort is usually nicer than createdAt for categories
+    return CategoryModel.find(filter).sort({ name: 1 }).exec();
+  },
+
+  // convenience for admin if you want to be explicit
+  async listAllCategories(): Promise<ICategory[]> {
+    return CategoryModel.find().sort({ name: 1 }).exec();
   },
 
   async updateCategory(
