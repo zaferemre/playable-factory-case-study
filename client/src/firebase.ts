@@ -48,7 +48,11 @@ if (hasValidConfig) {
     console.log('✅ Firebase initialized successfully');
   } catch (error) {
     console.error('❌ Firebase initialization failed:', error);
-    // Don't throw - let app continue without Firebase
+    // Initialize with null values to prevent crashes
+    app = null;
+    auth = null;
+    googleProvider = null;
+    appleProvider = null;
   }
 } else {
   console.warn('⚠️ Firebase not initialized - missing required environment variables:', {
@@ -56,6 +60,11 @@ if (hasValidConfig) {
     hasAuthDomain: !!firebaseConfig.authDomain, 
     hasProjectId: !!firebaseConfig.projectId
   });
+  // Set explicit null values
+  app = null;
+  auth = null;
+  googleProvider = null;
+  appleProvider = null;
 }
 
 export { auth, googleProvider, appleProvider };

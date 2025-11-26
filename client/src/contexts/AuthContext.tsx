@@ -101,9 +101,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loginWithGoogle = async () => {
     if (!auth || !googleProvider) {
-      throw new Error('Firebase auth not available');
+      console.error('🔥 Firebase auth not available for Google sign-in');
+      alert('Authentication service is not available. Please try again later or contact support.');
+      throw new Error('Firebase auth not available - check environment variables');
     }
-    await signInWithPopup(auth, googleProvider);
+    try {
+      await signInWithPopup(auth, googleProvider);
+    } catch (error) {
+      console.error('Google sign-in error:', error);
+      throw error;
+    }
   };
 
   const loginWithEmail = async (email: string, password: string) => {

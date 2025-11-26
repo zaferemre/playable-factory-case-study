@@ -339,7 +339,7 @@ export default function Hero() {
 
       {/* Shop button */}
       <motion.div
-        className="absolute bottom-20 sm:bottom-24 lg:bottom-1/4 left-1/2 z-30 -translate-x-1/2 flex justify-center w-full px-4 lg:px-0"
+        className="absolute bottom-20 sm:bottom-24 lg:bottom-1/4 left-1/2 z-30 -translate-x-1/2"
         initial={{ y: 30, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.3, duration: 0.5 }}
@@ -349,7 +349,7 @@ export default function Hero() {
           className="group inline-flex items-center justify-center rounded-full bg-gradient-to-r from-red-600 to-red-500 
           px-8 sm:px-12 lg:px-24 py-4 sm:py-5 text-lg sm:text-2xl lg:text-3xl font-bold text-white 
           shadow-xl shadow-red-300/50 hover:shadow-red-400/60 hover:from-red-500 hover:to-red-400 
-          transition-all duration-300 transform hover:scale-105 active:scale-95 max-w-xs lg:max-w-none"
+          transition-all duration-300 transform hover:scale-105 active:scale-95 whitespace-nowrap"
         >
           <IconShoppingCart className="mr-2 sm:mr-3 w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 group-hover:animate-bounce" />
           SHOP NOW
