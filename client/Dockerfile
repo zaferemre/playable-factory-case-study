@@ -3,19 +3,26 @@ FROM node:20-alpine AS base
 
 # Install dependencies only when needed
 FROM base AS deps
-RUN apk add --no-cache libc6-compat
+# Install required packages for native dependencies
+RUN apk add --no-cache libc6-compat python3 make g++ linux-headers
 WORKDIR /app
 
 # Install dependencies
 COPY package.json package-lock.json* ./
-RUN npm install
+RUN npm ci --production=false
 RUN ls -la node_modules/.bin/ | grep next || echo "Next.js binary not found"
 
 # Rebuild the source code only when needed
 FROM base AS builder
 WORKDIR /app
+# Install build dependencies
+RUN apk add --no-cache libc6-compat python3 make g++ linux-headers
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+
+# Set environment for build
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
 
 # Build the app using npx
 RUN npx next build

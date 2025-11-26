@@ -23,10 +23,6 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  // Disable telemetry
-  telemetry: {
-    enabled: false,
-  },
 };
 
 export default nextConfig;
