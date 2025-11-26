@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   reactCompiler: true,
-  output: 'standalone',
+  output: "standalone",
   images: {
     remotePatterns: [
       {
@@ -17,16 +17,15 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  // Ensure compatibility with Railway
-  experimental: {
-    serverComponentsExternalPackages: [],
-  },
+  // Updated server external packages configuration
+  serverExternalPackages: [],
   // Handle potential build issues
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
   typescript: {
     ignoreBuildErrors: true,
+  },
+  // Disable telemetry
+  telemetry: {
+    enabled: false,
   },
 };
 
