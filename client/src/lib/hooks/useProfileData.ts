@@ -60,7 +60,6 @@ export function useProfileData({
         const u = await getUserById(backendUserId);
         setUserProfile(u);
       } catch (err) {
-        console.error("getUserById error", err);
         setError(
           err instanceof Error ? err.message : "Failed to load user profile"
         );
@@ -77,7 +76,6 @@ export function useProfileData({
         );
         setOrders(list);
       } catch (err) {
-        console.error("getOrdersForUser error", err);
         setError((prev) => prev || "Failed to load order history");
       } finally {
         setOrdersLoading(false);
@@ -95,7 +93,6 @@ export function useProfileData({
         });
         setReviews(list);
       } catch (err) {
-        console.error("listReviews error", err);
       } finally {
         setReviewsLoading(false);
       }
@@ -149,7 +146,6 @@ export function useProfileData({
         isDefault: false,
       });
     } catch (err) {
-      console.error("addUserAddress error", err);
       setError(err instanceof Error ? err.message : "Failed to add address");
     } finally {
       setAddressesLoading(false);
@@ -165,7 +161,6 @@ export function useProfileData({
       const updated = await deleteUserAddress(backendUserId, index);
       setUserProfile(updated);
     } catch (err) {
-      console.error("deleteUserAddress error", err);
       setError(err instanceof Error ? err.message : "Failed to delete address");
     } finally {
       setAddressesLoading(false);
@@ -181,7 +176,6 @@ export function useProfileData({
       const updated = await setDefaultUserAddress(backendUserId, index);
       setUserProfile(updated);
     } catch (err) {
-      console.error("setDefaultUserAddress error", err);
       setError(
         err instanceof Error ? err.message : "Failed to set default address"
       );

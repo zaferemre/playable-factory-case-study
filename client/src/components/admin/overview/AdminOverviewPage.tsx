@@ -28,7 +28,6 @@ function useAdminOverviewData() {
         const ov = await getAdminOverview();
         setOverview(ov);
       } catch (err: unknown) {
-        console.error("getAdminOverview error", err);
         setError(
           err instanceof Error ? err.message : "Failed to load admin overview"
         );
@@ -41,7 +40,6 @@ function useAdminOverviewData() {
         const list = await getAdminProducts();
         setProducts(list);
       } catch (err: unknown) {
-        console.error("getAdminProducts error", err);
         setError((prev) => prev || "Failed to load products");
       } finally {
         setProductsLoading(false);

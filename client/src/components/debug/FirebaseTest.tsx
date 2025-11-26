@@ -61,10 +61,9 @@ export default function FirebaseTest() {
     try {
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
-      console.log("✅ Google Sign-in Success:", result.user.email);
+
       alert(`Success! Signed in as: ${result.user.email}`);
     } catch (error) {
-      console.error("❌ Google Sign-in Error:", error);
       alert(
         `Error: ${error instanceof Error ? error.message : "Unknown error"}`
       );

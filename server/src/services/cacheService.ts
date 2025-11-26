@@ -12,7 +12,6 @@ export class CacheService {
 
       return JSON.parse(cached) as T;
     } catch (error) {
-      console.error(`Cache get error for key ${key}:`, error);
       return null;
     }
   }
@@ -26,9 +25,7 @@ export class CacheService {
       if (!redisClient.isOpen) return;
 
       await redisClient.setEx(key, ttl, JSON.stringify(value));
-    } catch (error) {
-      console.error(`Cache set error for key ${key}:`, error);
-    }
+    } catch (error) {}
   }
 
   static async del(key: string): Promise<void> {
@@ -36,9 +33,7 @@ export class CacheService {
       if (!redisClient.isOpen) return;
 
       await redisClient.del(key);
-    } catch (error) {
-      console.error(`Cache delete error for key ${key}:`, error);
-    }
+    } catch (error) {}
   }
 
   static async delPattern(pattern: string): Promise<void> {
@@ -49,12 +44,7 @@ export class CacheService {
       if (keys.length > 0) {
         await redisClient.del(keys);
       }
-    } catch (error) {
-      console.error(
-        `Cache delete pattern error for pattern ${pattern}:`,
-        error
-      );
-    }
+    } catch (error) {}
   }
 
   // Product-specific cache methods

@@ -39,7 +39,6 @@ export default function CheckoutOrderSummary({
             const product = await getProductById(item.productId);
             return { ...item, product };
           } catch (error) {
-            console.error(`Failed to fetch product ${item.productId}:`, error);
             return item; // Return without product if fetch fails
           }
         });
@@ -47,7 +46,6 @@ export default function CheckoutOrderSummary({
         const itemsWithProducts = await Promise.all(promises);
         setItemsWithProducts(itemsWithProducts);
       } catch (error) {
-        console.error("Failed to fetch product details:", error);
         setItemsWithProducts(draft.items);
       } finally {
         setLoading(false);

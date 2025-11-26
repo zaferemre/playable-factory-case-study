@@ -37,7 +37,6 @@ export function useOrdersManagement() {
         setOverview(overviewData);
         setOrders(ordersData);
       } catch (err) {
-        console.error("Admin orders load error", err);
         setError(err instanceof Error ? err.message : "Failed to load orders");
       } finally {
         setLoading(false);
@@ -78,7 +77,6 @@ export function useOrdersManagement() {
         )
       );
     } catch (err) {
-      console.error("Failed to update order status", err);
       setError("Failed to update order status");
     } finally {
       setUpdatingOrderId(null);

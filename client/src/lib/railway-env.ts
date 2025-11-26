@@ -18,13 +18,6 @@ export const railwayEnv = {
 };
 
 // Debug logging
-console.log("🔧 Railway Environment Variables:", {
-  hasApiKey: !!railwayEnv.NEXT_PUBLIC_FIREBASE_API_KEY,
-  hasAuthDomain: !!railwayEnv.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  hasProjectId: !!railwayEnv.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  apiUrl: railwayEnv.NEXT_PUBLIC_API_URL,
-  authDomain: railwayEnv.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: railwayEnv.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-});
+// Railway environment variables configured
 
 export default railwayEnv;

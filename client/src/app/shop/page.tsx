@@ -56,7 +56,6 @@ export default function ShopPage() {
         setProducts(productsList);
         setCategories(categoriesList);
       } catch (err) {
-        console.error("Shop page load error", err);
         setError(
           err instanceof Error ? err.message : "Failed to load products"
         );

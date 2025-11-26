@@ -21,7 +21,6 @@ export const syncFirebaseUser = async (req: Request, res: Response) => {
 
     res.json({ user, cart });
   } catch (err) {
-    console.error("syncFirebaseUser error", err);
     res.status(500).json({ message: "Failed to sync user" });
   }
 };

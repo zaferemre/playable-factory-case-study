@@ -210,7 +210,7 @@ export function useCheckout({
 
       deleteOrderDraft(clientOrderId);
       setSuccessMessage("Order created successfully.");
-      console.log("Created order", order);
+
       // navigation is handled by the container if needed
     } catch (err: any) {
       console.error("createOrder error", err);

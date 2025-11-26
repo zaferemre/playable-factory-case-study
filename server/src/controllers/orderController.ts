@@ -8,7 +8,6 @@ export const createOrder = async (req: Request, res: Response) => {
     const order = await orderService.createOrder(req.body);
     res.status(201).json(order);
   } catch (err) {
-    console.error("createOrder error", err);
     res.status(500).json({ message: "Failed to create order" });
   }
 };
@@ -21,7 +20,6 @@ export const getOrderById = async (req: Request, res: Response) => {
     }
     res.json(order);
   } catch (err) {
-    console.error("getOrderById error", err);
     res.status(500).json({ message: "Failed to fetch order" });
   }
 };
@@ -37,7 +35,6 @@ export const getOrderByClientOrderId = async (req: Request, res: Response) => {
 
     res.json(order);
   } catch (err) {
-    console.error("getOrderByClientOrderId error", err);
     res.status(500).json({ message: "Failed to fetch order" });
   }
 };
@@ -48,7 +45,6 @@ export const getOrdersForUser = async (req: Request, res: Response) => {
     const orders = await orderService.getOrdersForUser(userId);
     res.json(orders);
   } catch (err) {
-    console.error("getOrdersForUser error", err);
     res.status(500).json({ message: "Failed to fetch orders" });
   }
 };
@@ -73,7 +69,6 @@ export const getAllOrders = async (req: Request, res: Response) => {
 
     res.json(orders);
   } catch (err) {
-    console.error("getAllOrders error", err);
     res.status(500).json({ message: "Failed to fetch orders" });
   }
 };
@@ -106,7 +101,6 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
 
     res.json(updated);
   } catch (err) {
-    console.error("updateOrderStatus error", err);
     res.status(500).json({ message: "Failed to update order status" });
   }
 };
@@ -117,7 +111,6 @@ export const getOrdersOverview = async (_req: Request, res: Response) => {
     const overview = await orderService.getOrdersOverview();
     res.json(overview);
   } catch (err) {
-    console.error("getOrdersOverview error", err);
     res.status(500).json({ message: "Failed to fetch orders overview" });
   }
 };

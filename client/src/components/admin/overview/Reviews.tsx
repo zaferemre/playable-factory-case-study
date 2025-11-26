@@ -13,8 +13,6 @@ export default function Reviews({ limit = 5 }: ReviewsProps) {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
 
-  console.log("Reviews component mounted, limit:", limit);
-
   useEffect(() => {
     const fetchReviews = async () => {
       try {
@@ -47,7 +45,6 @@ export default function Reviews({ limit = 5 }: ReviewsProps) {
           setReviews(mockReviews);
         }
       } catch (error) {
-        console.error("Failed to fetch reviews:", error);
         // Show mock data even on error for now
         const mockReviews: Review[] = [
           {

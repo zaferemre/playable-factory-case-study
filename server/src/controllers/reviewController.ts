@@ -21,7 +21,6 @@ export const listAllReviews = async (req: Request, res: Response) => {
       limit: parsedLimit,
     });
   } catch (err) {
-    console.error("listAllReviews error", err);
     res.status(500).json({ message: "Failed to fetch all reviews" });
   }
 };
@@ -31,8 +30,6 @@ export const createReview = async (req: Request, res: Response) => {
     const review = await reviewService.createReview(req.body);
     res.status(201).json(review);
   } catch (err: any) {
-    console.error("createReview error", err);
-
     // duplicate key because of unique product + user index
     if (err?.code === 11000) {
       return res.status(400).json({
@@ -52,7 +49,6 @@ export const getReviewById = async (req: Request, res: Response) => {
     }
     res.json(review);
   } catch (err) {
-    console.error("getReviewById error", err);
     res.status(500).json({ message: "Failed to fetch review" });
   }
 };
@@ -78,7 +74,6 @@ export const updateReview = async (req: Request, res: Response) => {
 
     res.json(updated);
   } catch (err) {
-    console.error("updateReview error", err);
     res.status(500).json({ message: "Failed to update review" });
   }
 };
@@ -94,7 +89,6 @@ export const deleteReview = async (req: Request, res: Response) => {
 
     res.json({ success: true });
   } catch (err) {
-    console.error("deleteReview error", err);
     res.status(500).json({ message: "Failed to delete review" });
   }
 };
@@ -140,7 +134,6 @@ export const listReviews = async (req: Request, res: Response) => {
       limit: parsedLimit,
     });
   } catch (err) {
-    console.error("listReviews error", err);
     res.status(500).json({ message: "Failed to fetch reviews" });
   }
 };

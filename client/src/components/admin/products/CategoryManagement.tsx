@@ -38,9 +38,7 @@ export default function CategoryManagement({
     try {
       const updated = await getAllCategoriesAdmin(true);
       onCategoriesChange(updated);
-    } catch (err) {
-      console.error("Failed to refresh categories:", err);
-    }
+    } catch (err) {}
   };
 
   const handleCreate = async (e: React.FormEvent) => {

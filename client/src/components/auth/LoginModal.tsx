@@ -71,7 +71,6 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
       }
       onClose();
     } catch (err: unknown) {
-      console.error("Email auth error:", err);
       const errorMessage =
         err instanceof Error ? err.message : "Authentication failed";
       setError(errorMessage);
@@ -87,7 +86,6 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
       await signInWithPopup(auth, googleProvider);
       onClose();
     } catch (err: unknown) {
-      console.error("Google sign in error:", err);
       const errorMessage =
         err instanceof Error ? err.message : "Google sign in failed";
       setError(errorMessage);
@@ -103,7 +101,6 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
       await signInWithPopup(auth, appleProvider);
       onClose();
     } catch (err: unknown) {
-      console.error("Apple sign in error:", err);
       const errorMessage =
         err instanceof Error ? err.message : "Apple sign in failed";
       setError(errorMessage);

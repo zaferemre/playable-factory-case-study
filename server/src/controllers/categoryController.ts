@@ -7,8 +7,6 @@ export const createCategory = async (req: Request, res: Response) => {
     const category = await categoryService.createCategory(req.body);
     res.status(201).json(category);
   } catch (err: any) {
-    console.error("createCategory error", err);
-
     if (err?.code === 11000) {
       return res
         .status(400)

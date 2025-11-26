@@ -25,9 +25,7 @@ export function testEnvironmentVariables() {
 
   const missing = vars.filter((varName) => !process.env[varName]);
   if (missing.length > 0) {
-    console.error("❌ Missing environment variables:", missing);
   } else {
-    console.log("✅ All environment variables are present");
   }
 
   return {
