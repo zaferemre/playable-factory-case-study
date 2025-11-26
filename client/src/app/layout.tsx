@@ -18,6 +18,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head>
+        <script src="/env.js" defer></script>
+      </head>
       <body className="font-fredoka bg-white text-slate-900 antialiased">
         <AuthProvider>
           <ReduxProvider>
