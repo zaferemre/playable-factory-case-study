@@ -49,6 +49,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isAdmin = backendUser?.role === "admin";
 
   useEffect(() => {
+    if (!auth) {
+      console.warn('⚠️ Firebase auth not available, skipping authentication');
+      setLoading(false);
+      return;
+    }
+    
     const unsub = onAuthStateChanged(auth, async (fbUser) => {
       setFirebaseUser(fbUser);
 
@@ -94,18 +100,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const loginWithGoogle = async () => {
+    if (!auth || !googleProvider) {
+      throw new Error('Firebase auth not available');
+    }
     await signInWithPopup(auth, googleProvider);
   };
 
   const loginWithEmail = async (email: string, password: string) => {
+    if (!auth) {
+      throw new Error('Firebase auth not available');
+    }
     await signInWithEmailAndPassword(auth, email, password);
   };
 
   const signUpWithEmail = async (email: string, password: string) => {
+    if (!auth) {
+      throw new Error('Firebase auth not available');
+    }
     await createUserWithEmailAndPassword(auth, email, password);
   };
 
   const logout = async () => {
+    if (!auth) {
+      console.warn('Firebase auth not available for logout');
+      return;
+    }
     await signOut(auth);
   };
 
