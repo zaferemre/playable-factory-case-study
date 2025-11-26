@@ -29,9 +29,14 @@ export const connectRedis = async () => {
   try {
     if (!redisClient.isOpen) {
       await redisClient.connect();
+      console.log("✅ Redis connected successfully");
     }
   } catch (error) {
-    console.error("Failed to connect to Redis:", error);
+    console.error(
+      "⚠️ Failed to connect to Redis (server will continue without cache):",
+      error
+    );
+    // Don't throw error - let server start without Redis cache
   }
 };
 

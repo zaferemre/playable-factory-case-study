@@ -20,7 +20,22 @@ app.use(cors());
 app.use(express.json());
 
 app.get("/api/health", (_req, res) => {
-  res.json({ ok: true, message: "Playable Shop backend is running" });
+  res.json({
+    ok: true,
+    message: "Playable Shop backend is running",
+    timestamp: new Date().toISOString(),
+    port: PORT,
+    host: HOST,
+    env: process.env.NODE_ENV,
+  });
+});
+
+app.get("/", (_req, res) => {
+  res.json({
+    message: "Playable Factory Case Study API",
+    status: "running",
+    timestamp: new Date().toISOString(),
+  });
 });
 
 app.use("/api/auth", authRoutes);
@@ -31,15 +46,30 @@ app.use("/api/reviews", reviewRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/orders", orderRoutes);
 
-const PORT = process.env.PORT || 3001;
+const PORT = parseInt(process.env.PORT || "3001", 10);
+const HOST = process.env.NODE_ENV === "production" ? "0.0.0.0" : "localhost";
 
 const start = async () => {
-  await connectDB();
-  await connectRedis();
+  try {
+    console.log("Starting server...");
+    console.log("Environment:", process.env.NODE_ENV);
+    console.log("Port:", PORT);
+    console.log("Host:", HOST);
 
-  app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-  });
+    await connectDB();
+    console.log("Database connected successfully");
+
+    await connectRedis();
+    console.log("Redis connected successfully");
+
+    app.listen(PORT, HOST, () => {
+      console.log(`Server running on http://${HOST}:${PORT}`);
+      console.log("Server is ready to accept connections");
+    });
+  } catch (error) {
+    console.error("Error during startup:", error);
+    throw error;
+  }
 };
 
 start().catch((err) => {
