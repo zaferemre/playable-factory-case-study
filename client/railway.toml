@@ -5,7 +5,7 @@ builder = "NIXPACKS"
 NODE_VERSION = "20"
 
 [deploy]
-startCommand = "npm run build && npm start"
+startCommand = "npm start"
 
 [env]
 NODE_ENV = "production"
