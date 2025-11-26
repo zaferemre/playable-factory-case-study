@@ -6,9 +6,10 @@ FROM base AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-# Install dependencies based on the preferred package manager
+# Install dependencies
 COPY package.json package-lock.json* ./
-RUN npm ci
+RUN npm install
+RUN ls -la node_modules/.bin/ | grep next || echo "Next.js binary not found"
 
 # Rebuild the source code only when needed
 FROM base AS builder
@@ -16,11 +17,8 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Set build environment variables
-ENV NODE_ENV=production
-
-# Build the app
-RUN npm run build
+# Build the app using npx
+RUN npx next build
 
 # Production image, copy all the files and run next
 FROM base AS runner

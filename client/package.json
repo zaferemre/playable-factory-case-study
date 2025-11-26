@@ -7,11 +7,11 @@
     "npm": ">=10.0.0"
   },
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
+    "dev": "npx next dev",
+    "build": "npx next build",
+    "start": "npx next start",
     "lint": "eslint",
-    "postinstall": "echo 'Next.js installed:' && which next || echo 'Next.js not found in PATH'"
+    "debug": "echo 'Node version:' && node --version && echo 'NPM version:' && npm --version && echo 'Next.js location:' && find node_modules -name 'next' -type d 2>/dev/null || echo 'Next.js not found'"
   },
   "dependencies": {
     "@reduxjs/toolkit": "^2.10.1",
