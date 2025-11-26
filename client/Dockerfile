@@ -45,12 +45,14 @@ RUN chown nextjs:nodejs .next
 # Automatically leverage output traces to reduce image size
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --chown=nextjs:nodejs railway-start.sh ./
 
 USER nextjs
 
-EXPOSE 3000
+# Railway provides PORT dynamically
+ENV HOSTNAME="0.0.0.0"
 
-ENV PORT 3000
-ENV HOSTNAME "0.0.0.0"
+# Expose the port (Railway will handle the mapping)
+EXPOSE $PORT
 
-CMD ["node", "server.js"]
+CMD ["sh", "railway-start.sh"]

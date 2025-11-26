@@ -2,8 +2,9 @@
 echo "=== Railway Debug Info ==="
 echo "Node version: $(node --version)"
 echo "NPM version: $(npm --version)"
+echo "PORT environment: $PORT"
 echo "Current directory: $(pwd)"
-echo "Node modules exists: $(ls -la node_modules | head -5)"
-echo "Next.js in node_modules: $(ls -la node_modules/.bin/next 2>/dev/null || echo 'NOT FOUND')"
+echo "Files in current directory: $(ls -la | head -10)"
 echo "=== Starting Application ==="
-npx next start
+echo "Starting Next.js on port $PORT"
+node server.js
