@@ -7,60 +7,22 @@ import {
   RecaptchaVerifier,
   type Auth,
 } from "firebase/auth";
-import railwayEnv from "@/lib/railway-env";
-import getRuntimeConfig from "@/lib/runtime-config";
-import { testEnvironmentVariables } from "@/lib/env-test";
 
-// Get runtime configuration with multiple fallbacks
-const runtimeConfig = getRuntimeConfig();
-
-// Firebase configuration with multiple fallback strategies
+// Simple, direct Firebase configuration
 const firebaseConfig = {
-  apiKey: 
-    process.env.NEXT_PUBLIC_FIREBASE_API_KEY || 
-    runtimeConfig.NEXT_PUBLIC_FIREBASE_API_KEY || 
-    railwayEnv.NEXT_PUBLIC_FIREBASE_API_KEY || 
-    "",
-  authDomain: 
-    process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || 
-    runtimeConfig.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || 
-    railwayEnv.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || 
-    "",
-  projectId: 
-    process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 
-    runtimeConfig.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 
-    railwayEnv.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 
-    "",
-  storageBucket: 
-    process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || 
-    runtimeConfig.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || 
-    railwayEnv.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || 
-    "",
-  messagingSenderId:
-    process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || 
-    runtimeConfig.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || 
-    railwayEnv.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || 
-    "",
-  appId: 
-    process.env.NEXT_PUBLIC_FIREBASE_APP_ID || 
-    runtimeConfig.NEXT_PUBLIC_FIREBASE_APP_ID || 
-    railwayEnv.NEXT_PUBLIC_FIREBASE_APP_ID || 
-    "",
-  measurementId: 
-    process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID || 
-    runtimeConfig.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID || 
-    railwayEnv.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID || 
-    "",
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "",
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "",
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "",
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "",
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "",
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "",
+  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID || "",
 };
-
-// Test environment variables
-const envTest = testEnvironmentVariables();
 
 // Debug logging for Railway environment
 console.log("🔧 Firebase Environment Debug:", {
   NODE_ENV: process.env.NODE_ENV,
   environment: typeof window !== "undefined" ? "browser" : "server",
-  envTest,
   // Raw environment variables
   raw_NEXT_PUBLIC_FIREBASE_API_KEY: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   raw_NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN:
