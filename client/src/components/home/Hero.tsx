@@ -339,7 +339,7 @@ export default function Hero() {
 
       {/* Shop button */}
       <motion.div
-        className="absolute bottom-20 sm:bottom-24 lg:bottom-1/4 left-1/2 z-30 -translate-x-1/2"
+        className="absolute bottom-20 sm:bottom-24 lg:bottom-1/4 left-0 right-0 z-30 flex justify-center"
         initial={{ y: 30, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.3, duration: 0.5 }}

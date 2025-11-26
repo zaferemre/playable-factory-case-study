@@ -37,8 +37,8 @@ export function DockIconButton({
       )}
     >
       <Icon size={20} stroke={1.6} className="text-slate-700" />
-      {badge && badge > 0 && (
-        <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-[1.3rem] items-center justify-center rounded-full bg-red-500 px-[5px] text-[9px] font-semibold text-white shadow-sm">
+      {badge !== null && badge !== undefined && badge > 0 && (
+        <span className="absolute -right-1 -top-1 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-red-500 px-[4px] text-[10px] font-bold text-white shadow-md border border-white">
           {badge > 9 ? "9+" : badge}
         </span>
       )}
@@ -131,12 +131,12 @@ export default function MobileDock({
               fill="none"
               stroke="currentColor"
             >
-              <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
-              <line x1="3" x2="21" y1="6" y2="6" />
-              <path d="M16 10a4 4 0 0 1-8 0" />
+              <circle cx="8" cy="21" r="1" />
+              <circle cx="19" cy="21" r="1" />
+              <path d="m2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12" />
             </svg>
           )}
-          label="Shop"
+          label="Cart"
           href="/shop"
           badge={cartCount}
         />
