@@ -50,11 +50,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!auth) {
-      console.warn('⚠️ Firebase auth not available, skipping authentication');
+      console.warn("⚠️ Firebase auth not available, skipping authentication");
       setLoading(false);
       return;
     }
-    
+
     const unsub = onAuthStateChanged(auth, async (fbUser) => {
       setFirebaseUser(fbUser);
 
@@ -101,35 +101,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loginWithGoogle = async () => {
     if (!auth || !googleProvider) {
-      console.error('🔥 Firebase auth not available for Google sign-in');
-      alert('Authentication service is not available. Please try again later or contact support.');
-      throw new Error('Firebase auth not available - check environment variables');
+      console.error("🔥 Firebase auth not available for Google sign-in");
+      alert(
+        "Authentication service is not available. Please try again later or contact support."
+      );
+      throw new Error(
+        "Firebase auth not available - check environment variables"
+      );
     }
     try {
       await signInWithPopup(auth, googleProvider);
     } catch (error) {
-      console.error('Google sign-in error:', error);
+      console.error("Google sign-in error:", error);
       throw error;
     }
   };
 
   const loginWithEmail = async (email: string, password: string) => {
     if (!auth) {
-      throw new Error('Firebase auth not available');
+      throw new Error("Firebase auth not available");
     }
     await signInWithEmailAndPassword(auth, email, password);
   };
 
   const signUpWithEmail = async (email: string, password: string) => {
     if (!auth) {
-      throw new Error('Firebase auth not available');
+      throw new Error("Firebase auth not available");
     }
     await createUserWithEmailAndPassword(auth, email, password);
   };
 
   const logout = async () => {
     if (!auth) {
-      console.warn('Firebase auth not available for logout');
+      console.warn("Firebase auth not available for logout");
       return;
     }
     await signOut(auth);

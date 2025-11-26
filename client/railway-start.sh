@@ -4,6 +4,9 @@ echo "PORT: $PORT"
 echo "HOSTNAME: $HOSTNAME"
 echo "NODE_ENV: $NODE_ENV"
 
+echo "=== ALL Environment Variables ==="
+env | grep -E "(NEXT_PUBLIC_|FIREBASE_|API_|PORT|NODE_ENV)" | sort
+
 echo "=== Firebase Environment Check ==="
 echo "NEXT_PUBLIC_FIREBASE_API_KEY: ${NEXT_PUBLIC_FIREBASE_API_KEY:0:15}..."
 echo "NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: $NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN"
@@ -12,8 +15,17 @@ echo "NEXT_PUBLIC_API_URL: $NEXT_PUBLIC_API_URL"
 
 echo "=== File System Check ==="
 echo "Current directory: $(pwd)"
-echo "Contents:"
-ls -la
+echo "Server.js exists: $([ -f server.js ] && echo 'YES' || echo 'NO')"
+
+echo "=== Exporting Environment Variables ==="
+export NEXT_PUBLIC_FIREBASE_API_KEY="$NEXT_PUBLIC_FIREBASE_API_KEY"
+export NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN="$NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN"
+export NEXT_PUBLIC_FIREBASE_PROJECT_ID="$NEXT_PUBLIC_FIREBASE_PROJECT_ID"
+export NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET="$NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET"
+export NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID="$NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID"
+export NEXT_PUBLIC_FIREBASE_APP_ID="$NEXT_PUBLIC_FIREBASE_APP_ID"
+export NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID="$NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID"
+export NEXT_PUBLIC_API_URL="$NEXT_PUBLIC_API_URL"
 
 echo "=== Starting Next.js Server ==="
 # Next.js standalone server automatically uses PORT env var

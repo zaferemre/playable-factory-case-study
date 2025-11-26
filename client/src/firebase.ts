@@ -7,26 +7,43 @@ import {
   RecaptchaVerifier,
   type Auth,
 } from "firebase/auth";
+import getRuntimeConfig from "@/lib/runtime-config";
+import { testEnvironmentVariables } from "@/lib/env-test";
+
+// Get runtime configuration
+const runtimeConfig = getRuntimeConfig();
 
 const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "",
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "",
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "",
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "",
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "",
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "",
-  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID || "",
+  apiKey: runtimeConfig.NEXT_PUBLIC_FIREBASE_API_KEY || "",
+  authDomain: runtimeConfig.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "",
+  projectId: runtimeConfig.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "",
+  storageBucket: runtimeConfig.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "",
+  messagingSenderId: runtimeConfig.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "",
+  appId: runtimeConfig.NEXT_PUBLIC_FIREBASE_APP_ID || "",
+  measurementId: runtimeConfig.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID || "",
 };
 
+// Test environment variables
+const envTest = testEnvironmentVariables();
+
 // Debug logging for Railway environment
-if (process.env.NODE_ENV === 'production') {
-  console.log('🔧 Firebase Environment Check:', {
-    apiKey: firebaseConfig.apiKey ? `${firebaseConfig.apiKey.substring(0, 10)}...` : 'MISSING',
-    authDomain: firebaseConfig.authDomain || 'MISSING',
-    projectId: firebaseConfig.projectId || 'MISSING',
-    environment: typeof window !== "undefined" ? 'browser' : 'server'
-  });
-}
+console.log('🔧 Firebase Environment Debug:', {
+  NODE_ENV: process.env.NODE_ENV,
+  environment: typeof window !== "undefined" ? 'browser' : 'server',
+  envTest,
+  // Raw environment variables
+  raw_NEXT_PUBLIC_FIREBASE_API_KEY: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  raw_NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  raw_NEXT_PUBLIC_FIREBASE_PROJECT_ID: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  // Processed config
+  config_apiKey: firebaseConfig.apiKey ? `${firebaseConfig.apiKey.substring(0, 10)}...` : 'MISSING',
+  config_authDomain: firebaseConfig.authDomain || 'MISSING',
+  config_projectId: firebaseConfig.projectId || 'MISSING',
+  // Length checks
+  apiKeyLength: firebaseConfig.apiKey.length,
+  authDomainLength: firebaseConfig.authDomain.length,
+  projectIdLength: firebaseConfig.projectId.length
+});
 
 // Initialize Firebase if we have valid configuration
 let app: FirebaseApp | null = null;
