@@ -18,7 +18,8 @@ const firebaseConfig = {
   authDomain: runtimeConfig.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "",
   projectId: runtimeConfig.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "",
   storageBucket: runtimeConfig.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "",
-  messagingSenderId: runtimeConfig.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "",
+  messagingSenderId:
+    runtimeConfig.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "",
   appId: runtimeConfig.NEXT_PUBLIC_FIREBASE_APP_ID || "",
   measurementId: runtimeConfig.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID || "",
 };
@@ -27,22 +28,26 @@ const firebaseConfig = {
 const envTest = testEnvironmentVariables();
 
 // Debug logging for Railway environment
-console.log('🔧 Firebase Environment Debug:', {
+console.log("🔧 Firebase Environment Debug:", {
   NODE_ENV: process.env.NODE_ENV,
-  environment: typeof window !== "undefined" ? 'browser' : 'server',
+  environment: typeof window !== "undefined" ? "browser" : "server",
   envTest,
   // Raw environment variables
   raw_NEXT_PUBLIC_FIREBASE_API_KEY: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  raw_NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  raw_NEXT_PUBLIC_FIREBASE_PROJECT_ID: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  raw_NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN:
+    process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  raw_NEXT_PUBLIC_FIREBASE_PROJECT_ID:
+    process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
   // Processed config
-  config_apiKey: firebaseConfig.apiKey ? `${firebaseConfig.apiKey.substring(0, 10)}...` : 'MISSING',
-  config_authDomain: firebaseConfig.authDomain || 'MISSING',
-  config_projectId: firebaseConfig.projectId || 'MISSING',
+  config_apiKey: firebaseConfig.apiKey
+    ? `${firebaseConfig.apiKey.substring(0, 10)}...`
+    : "MISSING",
+  config_authDomain: firebaseConfig.authDomain || "MISSING",
+  config_projectId: firebaseConfig.projectId || "MISSING",
   // Length checks
   apiKeyLength: firebaseConfig.apiKey.length,
   authDomainLength: firebaseConfig.authDomain.length,
-  projectIdLength: firebaseConfig.projectId.length
+  projectIdLength: firebaseConfig.projectId.length,
 });
 
 // Initialize Firebase if we have valid configuration
@@ -52,9 +57,10 @@ let googleProvider: GoogleAuthProvider | null = null;
 let appleProvider: OAuthProvider | null = null;
 
 // Check if we have minimum required Firebase config
-const hasValidConfig = firebaseConfig.apiKey && 
-                      firebaseConfig.authDomain && 
-                      firebaseConfig.projectId;
+const hasValidConfig =
+  firebaseConfig.apiKey &&
+  firebaseConfig.authDomain &&
+  firebaseConfig.projectId;
 
 if (hasValidConfig) {
   try {
@@ -62,9 +68,9 @@ if (hasValidConfig) {
     auth = getAuth(app);
     googleProvider = new GoogleAuthProvider();
     appleProvider = new OAuthProvider("apple.com");
-    console.log('✅ Firebase initialized successfully');
+    console.log("✅ Firebase initialized successfully");
   } catch (error) {
-    console.error('❌ Firebase initialization failed:', error);
+    console.error("❌ Firebase initialization failed:", error);
     // Initialize with null values to prevent crashes
     app = null;
     auth = null;
@@ -72,11 +78,14 @@ if (hasValidConfig) {
     appleProvider = null;
   }
 } else {
-  console.warn('⚠️ Firebase not initialized - missing required environment variables:', {
-    hasApiKey: !!firebaseConfig.apiKey,
-    hasAuthDomain: !!firebaseConfig.authDomain, 
-    hasProjectId: !!firebaseConfig.projectId
-  });
+  console.warn(
+    "⚠️ Firebase not initialized - missing required environment variables:",
+    {
+      hasApiKey: !!firebaseConfig.apiKey,
+      hasAuthDomain: !!firebaseConfig.authDomain,
+      hasProjectId: !!firebaseConfig.projectId,
+    }
+  );
   // Set explicit null values
   app = null;
   auth = null;
